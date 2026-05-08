@@ -55,20 +55,34 @@ public class Arrow {
         int tipScreenY = cy + (int)(y * tipScale);
         
         // Draw the shaft
-        g.setColor(new Color(139, 69, 19)); // Brown
-        g.setStroke(new BasicStroke(Math.max(1, (int)(4 * perspectiveScale))));
+        g.setColor(new Color(200, 200, 200)); // Silver/carbon fiber arrow shaft
+        g.setStroke(new BasicStroke(Math.max(2, (int)(5 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.drawLine(tailScreenX, tailScreenY, tipScreenX, tipScreenY);
         
-        // Draw the fletchings at the tail
-        int fletchSize = Math.max(2, (int)(10 * perspectiveScale));
-        g.setColor(Color.RED);
-        g.drawLine(tailScreenX, tailScreenY, tailScreenX - fletchSize, tailScreenY - fletchSize);
-        g.drawLine(tailScreenX, tailScreenY, tailScreenX + fletchSize, tailScreenY - fletchSize);
-        g.drawLine(tailScreenX, tailScreenY, tailScreenX, tailScreenY + fletchSize);
+        // Draw fletchings (more realistic polygons)
+        int fletchSize = Math.max(3, (int)(15 * perspectiveScale));
+        g.setColor(new Color(200, 50, 50, 200)); // Translucent red
         
-        // Draw a small white dot at the very back (nock)
+        // Offset a bit from the very back
+        int fletchStartX = tailScreenX + (tipScreenX - tailScreenX) / 10;
+        int fletchStartY = tailScreenY + (tipScreenY - tailScreenY) / 10;
+        
+        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX - fletchSize}, 
+                      new int[]{fletchStartY, tailScreenY, tailScreenY - fletchSize}, 3);
+        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX + fletchSize}, 
+                      new int[]{fletchStartY, tailScreenY, tailScreenY - fletchSize}, 3);
+        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX}, 
+                      new int[]{fletchStartY, tailScreenY, tailScreenY + fletchSize}, 3);
+
+        // Arrowhead (if tip is visible, draw a small point)
+        int headSize = Math.max(2, (int)(8 * tipScale));
+        g.setColor(Color.DARK_GRAY);
+        g.fillPolygon(new int[]{tipScreenX, tipScreenX - headSize, tipScreenX + headSize}, 
+                      new int[]{tipScreenY + headSize, tipScreenY - headSize, tipScreenY - headSize}, 3);
+
+        // Nock
         g.setColor(Color.WHITE);
-        int nockSize = Math.max(2, (int)(4 * perspectiveScale));
+        int nockSize = Math.max(3, (int)(6 * perspectiveScale));
         g.fillOval(tailScreenX - nockSize/2, tailScreenY - nockSize/2, nockSize, nockSize);
         
         g.setStroke(new BasicStroke(1));
