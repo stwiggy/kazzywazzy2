@@ -1,118 +1,118 @@
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.RadialGradientPaint;
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.awt.BasicStroke;
-import java.awt.Stroke;
+import java.util.Random;
 
 public class Target {
-    public static final double DISTANCE_Z = 1000.0;
-    
-    public double x = 0;
+    // 3D position parameters
+    public double x = 0; // Centers around 0 in simulation space
     public double y = 0;
-    public double radius = 150.0;
-    
-    private final List<Point2D.Double> relativeHitOffsets = new ArrayList<>();
-    
-    private static final Color[] RING_COLORS = {
-        Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW
-    };
+    public static final double DISTANCE_Z = 50.0; 
+    public double radius = 120.0; 
 
-    public void addHit(double impactX, double impactY) {
-        double dx = impactX - this.x;
-        double dy = impactY - this.y;
-        relativeHitOffsets.add(new Point2D.Double(dx, dy));
+    // Dynamic movement state variables
+    private double destX = 0;
+    private double destY = 0;
+    private double speed = 3.5; // Constant movement speed in pixels/frame
+    private boolean isMovingEnabled = false;
+    private Random random = new Random();
+
+    // Hit-detection storage structures
+    private List<HitPoint> hits = new ArrayList<>();
+
+    private static class HitPoint {
+        double relX, relY; // Coordinates stored relative to the center of the moving target
+        HitPoint(double relX, double relY) {
+            this.relX = relX;
+            this.relY = relY;
+        }
+    }
+
+    public Target() {
+        pickNewDestination();
+    }
+
+    public void setMovementEnabled(boolean enabled) {
+        this.isMovingEnabled = enabled;
+        if (enabled) {
+            pickNewDestination();
+        }
+    }
+
+    private void pickNewDestination() {
+        // Generates reasonable bounding limits so it stays well within the visible field
+        this.destX = -180.0 + (random.nextDouble() * 360.0);
+        this.destY = -120.0 + (random.nextDouble() * 200.0);
+    }
+
+    public void update() {
+        if (!isMovingEnabled) return;
+
+        // Calculate vector distance components to target destination
+        double dx = destX - x;
+        double dy = destY - y;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= speed) {
+            // Snap to destination and pick a new point
+            x = destX;
+            y = destY;
+            pickNewDestination();
+        } else {
+            // Move smoothly along the vector path at a fixed constant speed
+            x += (dx / distance) * speed;
+            y += (dy / distance) * speed;
+        }
+    }
+
+    public int calculateScore(double arrowX, double arrowY) {
+        double dx = arrowX - x;
+        double dy = arrowY - y;
+        double dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= radius * 0.2) return 10;
+        if (dist <= radius * 0.4) return 8;
+        if (dist <= radius * 0.6) return 6;
+        if (dist <= radius * 0.8) return 4;
+        if (dist <= radius) return 2;
+        return 0;
+    }
+
+    public void addHit(double arrowX, double arrowY) {
+        // Store coordinates relative to target's center so hits move with it
+        hits.add(new HitPoint(arrowX - x, arrowY - y));
     }
 
     public void clearHits() {
-        relativeHitOffsets.clear();
+        hits.clear();
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        int cx = screenWidth / 2;
-        int cy = screenHeight / 2 - 100; 
-        
-        int screenX = cx + (int)(x * perspectiveScale);
-        int screenY = cy + (int)(y * perspectiveScale); 
-        int screenRadius = (int)(radius * perspectiveScale);
-        
-        // --- Draw Stand ---
-        g.setColor(new Color(80, 50, 20)); 
-        Stroke oldStroke = g.getStroke();
-        g.setStroke(new BasicStroke((float)Math.max(2, 10 * perspectiveScale), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.drawLine(screenX, screenY + screenRadius / 2, screenX, screenHeight);
-        g.drawLine(screenX, screenY + screenRadius / 2, screenX - screenRadius, screenHeight);
-        g.drawLine(screenX, screenY + screenRadius / 2, screenX + screenRadius, screenHeight);
-        g.setStroke(oldStroke);
+        int cx = screenWidth / 2 + (int)(x * perspectiveScale);
+        int cy = screenHeight / 2 - 100 + (int)(y * perspectiveScale);
 
-        // --- Draw Rings ---
-        int numRings = RING_COLORS.length;
-        for (int i = 0; i < numRings; i++) {
-            double ringRadiusScale = 1.0 - (i * 0.2); 
-            int currentRadius = (int)(screenRadius * ringRadiusScale);
-            if (currentRadius <= 0) continue;
-            
-            Point2D center = new Point2D.Float(screenX - currentRadius * 0.3f, screenY - currentRadius * 0.3f);
-            float rad = currentRadius * 1.5f;
-            Color baseColor = RING_COLORS[i];
-            Color highlight = i == 0 ? Color.WHITE : baseColor.brighter();
-            Color shadow = baseColor.darker();
-            
-            if (rad > 0) {
-                RadialGradientPaint p = new RadialGradientPaint(center, rad, new float[]{0.0f, 1.0f}, new Color[]{highlight, shadow});
-                g.setPaint(p);
-            } else {
-                g.setColor(baseColor);
-            }
-            
-            g.fillOval(screenX - currentRadius, screenY - currentRadius, currentRadius * 2, currentRadius * 2);
-            
-            if (i == 0 || i == numRings - 1) {
-                g.setColor(new Color(0, 0, 0, 80));
-                g.drawOval(screenX - currentRadius, screenY - currentRadius, currentRadius * 2, currentRadius * 2);
-            }
-        }
-        
-        // --- Draw Center Bullseye Lines ---
-        g.setColor(new Color(0, 0, 0, 100));
-        int innerRadius = (int)(screenRadius * 0.1);
-        if (innerRadius > 0) {
-            g.drawOval(screenX - innerRadius, screenY - innerRadius, innerRadius * 2, innerRadius * 2);
-            g.drawLine(screenX - 5, screenY, screenX + 5, screenY);
-            g.drawLine(screenX, screenY - 5, screenX, screenY + 5);
+        int r = (int)(radius * perspectiveScale);
+
+        // Render target ring layers
+        Color[] rings = {Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW};
+        for (int i = rings.length - 1; i >= 0; i--) {
+            int currentRadius = r * (i + 1) / rings.length;
+            g.setColor(rings[i]);
+            g.fillOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
+            g.setColor(Color.DARK_GRAY);
+            g.drawOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
         }
 
-        // --- Draw Saved Hits ---
-        for (Point2D.Double offset : relativeHitOffsets) {
-            int hitScreenX = screenX + (int)(offset.x * perspectiveScale);
-            int hitScreenY = screenY + (int)(offset.y * perspectiveScale);
-            int markerSize = Math.max(14, (int)(20 * perspectiveScale));
-
-            // Outer puncture circle
-            g.setColor(new Color(20, 20, 20, 220));
-            g.fillOval(hitScreenX - markerSize / 2, hitScreenY - markerSize / 2, markerSize, markerSize);
-
-            // 🟢 MODIFIED: Changed from red to a highly visible bright green
-            g.setColor(new Color(50, 255, 50));
-            g.fillOval(hitScreenX - markerSize / 4, hitScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
+        // Render relative hit marker indicators
+        g.setColor(new Color(50, 255, 50)); // Reverted Green impact markers
+        for (HitPoint hit : hits) {
+            int hx = cx + (int)(hit.relX * perspectiveScale);
+            int hy = cy + (int)(hit.relY * perspectiveScale);
+            g.fillOval(hx - 4, hy - 4, 8, 8);
+            g.setColor(Color.BLACK);
+            g.drawOval(hx - 4, hy - 4, 8, 8);
         }
-    }
-    
-    public int calculateScore(double impactX, double impactY) {
-        double dx = impactX - x;
-        double dy = impactY - y;
-        double distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance > radius) return 0; 
-        
-        double normalizedDist = distance / radius; 
-        if (normalizedDist <= 0.1) return 10; 
-        if (normalizedDist <= 0.2) return 9;  
-        if (normalizedDist <= 0.4) return 7;  
-        if (normalizedDist <= 0.6) return 5;  
-        if (normalizedDist <= 0.8) return 3;  
-        return 1;                             
     }
 }
