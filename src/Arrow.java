@@ -11,11 +11,11 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    // ADJUSTED CONSTANTS: Increased bow string speed potential and amplified environmental wind drift effects
-    private static final double K = 550.0;              // Increased from 450.0 for faster arrow speeds
+    // FIXED: Increased K to 1237.5 (550.0 * 2.25) to achieve a 1.5x faster velocity vector
+    private static final double K = 1237.5;       
     private static final double M = 0.02;       
     private static final double G = 9.8;        
-    private static final double WIND_ACCEL_FACTOR = 0.85; // Increased from 0.5 for stronger wind drift simulation
+    private static final double WIND_ACCEL_FACTOR = 0.85; 
 
     private double flightTime = 0;              
     private boolean isStuck = false;
