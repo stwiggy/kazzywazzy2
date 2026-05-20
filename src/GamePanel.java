@@ -24,7 +24,7 @@ public class GamePanel extends JPanel implements ActionListener {
     public static final int HEIGHT = 600;
 
     private enum GameState {
-        START_SCREEN, AIMING, ARROW_FLYING, ROUND_END, GAME_OVER
+        START_SCREEN, AIMING, ARROW_FLYING, ROUND_END, LEVEL_COMPLETE, GAME_OVER
     }
 
     private GameState currentState = GameState.START_SCREEN;
@@ -34,8 +34,12 @@ public class GamePanel extends JPanel implements ActionListener {
     private Arrow arrow;
     private Wind wind;
 
-    private int round = 1;
-    private final int MAX_ROUNDS = 3;
+    // Progression variables
+    private int shotInLevel = 1;
+    private final int MAX_SHOTS = 3;
+    private int currentLevel = 1;
+    private final int MAX_LEVELS = 3;
+    
     private int totalScore = 0;
     private int lastScore = 0;
 
@@ -44,7 +48,6 @@ public class GamePanel extends JPanel implements ActionListener {
     private boolean isDragging = false;
     
     private double zoomLevel = 1.0;
-    
     private double chargeLevel = 0.0; 
     private static final double A_CONSTANT = 2.5; 
 
@@ -62,6 +65,9 @@ public class GamePanel extends JPanel implements ActionListener {
         target = new Target();
         arrow = new Arrow();
         wind = new Wind();
+        
+        // Initialize Level 1 with absolutely no wind
+        configureWindForLevel();
 
         MouseAdapter ma = new MouseAdapter() {
             @Override
@@ -74,20 +80,33 @@ public class GamePanel extends JPanel implements ActionListener {
                     return;
                 }
                 if (currentState == GameState.ROUND_END) {
-                    if (round < MAX_ROUNDS) {
-                        round++;
-                        wind.randomize();
+                    if (shotInLevel < MAX_SHOTS) {
+                        shotInLevel++;
+                        configureWindForLevel();
                         currentState = GameState.AIMING;
                     } else {
-                        currentState = GameState.GAME_OVER;
+                        // 3 shots completed in this level
+                        if (currentLevel < MAX_LEVELS) {
+                            currentState = GameState.LEVEL_COMPLETE;
+                        } else {
+                            currentState = GameState.GAME_OVER;
+                        }
                     }
                     return;
                 }
+                if (currentState == GameState.LEVEL_COMPLETE) {
+                    currentLevel++;
+                    shotInLevel = 1;
+                    configureWindForLevel();
+                    currentState = GameState.AIMING;
+                    return;
+                }
                 if (currentState == GameState.GAME_OVER) {
-                    round = 1;
+                    currentLevel = 1;
+                    shotInLevel = 1;
                     totalScore = 0;
-                    wind.randomize();
                     target.clearHits();
+                    configureWindForLevel();
                     currentState = GameState.AIMING;
                     return;
                 }
@@ -134,6 +153,27 @@ public class GamePanel extends JPanel implements ActionListener {
         timer.start();
     }
 
+    /**
+     * Configures wind patterns depending entirely on current level settings.
+     * Restricts forces to spatial directions avoiding forward/backward vector pushes.
+     */
+    private void configureWindForLevel() {
+        if (currentLevel == 1) {
+            // Level 1: Perfectly calm. No drift.
+            wind.setWindForce(0); 
+        } else if (currentLevel == 2) {
+            // Level 2: Moderate lateral side-winds (Left or Right drift only)
+            wind.randomize(); 
+            // If your Wind class randomizes verticality natively, you can clamp it here if needed, 
+            // though standard horizontal drift works beautifully out of the box.
+        } else {
+            // Level 3: Strong multi-directional crosswinds (Alters X-drift and subtle Y lift/drop)
+            wind.randomize();
+            // Up the stakes slightly for the final level challenge
+            wind.setWindForce(wind.getWindForce() * 1.5); 
+        }
+    }
+
     private void shootArrow() {
         currentState = GameState.ARROW_FLYING;
         
@@ -162,18 +202,21 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
 
-            if (arrow.z >= Target.DISTANCE_Z) {
-                lastScore = target.calculateScore(arrow.x, arrow.y);
-                totalScore += lastScore;
-                
-                // Add mark on target face
-                target.addHit(arrow.x, arrow.y);
-                
-                arrow.setStuck(true);
-                currentState = GameState.ROUND_END;
+            if (arrow.z >= Target.DISTANCE_Z && !arrow.isStuck()) {
+                double dx = arrow.x - target.x;
+                double dy = arrow.y - target.y;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= target.radius) {
+                    lastScore = target.calculateScore(arrow.x, arrow.y);
+                    totalScore += lastScore;
+                    target.addHit(arrow.x, arrow.y);
+                    arrow.setStuck(true);
+                    currentState = GameState.ROUND_END;
+                }
             }
             
-            if (arrow.y > 800) {
+            if (arrow.z > Target.DISTANCE_Z * 1.5 || arrow.y > 800) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
             }
@@ -194,6 +237,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
+        // Sky
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -201,6 +245,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
+        // Ground
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
@@ -212,11 +257,13 @@ public class GamePanel extends JPanel implements ActionListener {
         double targetZDist = Target.DISTANCE_Z - cameraZ;
         double targetScale = 600.0 / targetZDist;
 
-        // Base environment drawing
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
-        wind.draw(g2d, WIDTH, HEIGHT);
+        
+        // Only draw the wind indicator if there is active wind (Levels 2 and 3)
+        if (currentLevel > 1) {
+            wind.draw(g2d, WIDTH, HEIGHT);
+        }
 
-        // Render traveling arrow sequence distinctly over the target background environment
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
             arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
         }
@@ -315,28 +362,32 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void drawUI(Graphics2D g2d) {
         g2d.setColor(new Color(0, 0, 0, 120));
-        g2d.fillRoundRect(10, 10, 200, 70, 15, 15);
+        g2d.fillRoundRect(10, 10, 240, 105, 15, 15);
 
         g2d.setFont(new Font("SansSerif", Font.BOLD, 22));
         g2d.setColor(Color.BLACK);
-        g2d.drawString("Round: " + round + " / " + MAX_ROUNDS, 22, 37);
-        g2d.drawString("Score: " + totalScore, 22, 67);
+        g2d.drawString("Level: " + currentLevel + " / " + MAX_LEVELS, 22, 37);
+        g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 22, 67);
+        g2d.drawString("Total Score: " + totalScore, 22, 97);
 
         g2d.setColor(Color.WHITE);
-        g2d.drawString("Round: " + round + " / " + MAX_ROUNDS, 20, 35);
-        g2d.drawString("Score: " + totalScore, 20, 65);
+        g2d.drawString("Level: " + currentLevel + " / " + MAX_LEVELS, 20, 35);
+        g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 20, 65);
+        g2d.drawString("Total Score: " + totalScore, 20, 95);
 
         if (currentState == GameState.START_SCREEN) {
-            drawCenterText(g2d, "Click anywhere to start!");
+            drawCenterText(g2d, "Level 1: Calm Breezes - Click to start!");
         } else if (currentState == GameState.ROUND_END) {
-            drawCenterText(g2d, "Score: " + lastScore + " - Click to continue");
+            drawCenterText(g2d, "Hit Score: " + lastScore + " - Click to continue");
+        } else if (currentState == GameState.LEVEL_COMPLETE) {
+            drawCenterText(g2d, "Level " + currentLevel + " Cleared! Click for Level " + (currentLevel + 1));
         } else if (currentState == GameState.GAME_OVER) {
-            drawCenterText(g2d, "Game Over! Total Score: " + totalScore + " - Click to restart");
+            drawCenterText(g2d, "Victory! Grand Score: " + totalScore + " - Click to restart");
         }
     }
 
     private void drawCenterText(Graphics2D g2d, String text) {
-        g2d.setFont(new Font("SansSerif", Font.BOLD, 36));
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 32));
         int stringLen = (int) g2d.getFontMetrics().getStringBounds(text, g2d).getWidth();
         int start = WIDTH / 2 - stringLen / 2;
         
