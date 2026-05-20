@@ -42,17 +42,9 @@ public class Wind {
         }
     }
 
-    public double getSpeed() {
-        return speed;
-    }
-
-    public double getDirSignX() {
-        return dirSignX;
-    }
-
-    public double getDirSignY() {
-        return dirSignY;
-    }
+    public double getSpeed() { return speed; }
+    public double getDirSignX() { return dirSignX; }
+    public double getDirSignY() { return dirSignY; }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight) {
         if (speed == 0.0 || (dirSignX == 0.0 && dirSignY == 0.0)) {
