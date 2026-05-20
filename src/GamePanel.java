@@ -159,17 +159,18 @@ public class GamePanel extends JPanel implements ActionListener {
         }
 
         if (currentState == GameState.ARROW_FLYING) {
-            // 💨 WIND INTEGRATION: Actively updates the arrow movement with wind data
-            arrow.update(wind);
+            // ⚡ INSTANT HIT LOOP: Completely processes the full math projection in a single frame
+            while (arrow.z < Target.DISTANCE_Z && arrow.y <= 800) {
+                arrow.update(wind);
+            }
 
+            // Immediately evaluate where the arrow landed
             if (arrow.z >= Target.DISTANCE_Z) {
                 lastScore = target.calculateScore(arrow.x, arrow.y);
                 totalScore += lastScore;
                 arrow.setStuck(true);
                 currentState = GameState.ROUND_END;
-            }
-            
-            if (arrow.y > 800) {
+            } else if (arrow.y > 800) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
             }
@@ -211,6 +212,7 @@ public class GamePanel extends JPanel implements ActionListener {
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         wind.draw(g2d, WIDTH, HEIGHT);
 
+        // This will now only render the arrow at its final impacted resting position
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
             double arrowDist = arrow.z - cameraZ;
             if (arrowDist < 1) arrowDist = 1;
@@ -250,11 +252,11 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        // 🔒 FIXED CENTER ANCHOR: The bow's default coordinate stays in the center-bottom
+        // 🔒 FIXED BOTTOM CENTER ANCHOR
         double anchorX = WIDTH / 2.0;
         int dynamicBowY = HEIGHT - 100; 
         
-        // 🏹 CURSOR INFLUENCE: Calculated tilt vector based on mouse X coordinate offset
+        // 🏹 CURSOR INTERACTION TILT
         double shiftX = (mouseX - anchorX) * 0.15; 
         double dynamicBowX = anchorX + shiftX;
         
