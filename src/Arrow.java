@@ -11,10 +11,11 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    private static final double K = 450.0;       
+    // ADJUSTED CONSTANTS: Increased bow string speed potential and amplified environmental wind drift effects
+    private static final double K = 550.0;              // Increased from 450.0 for faster arrow speeds
     private static final double M = 0.02;       
     private static final double G = 9.8;        
-    private static final double WIND_ACCEL_FACTOR = 0.5; 
+    private static final double WIND_ACCEL_FACTOR = 0.85; // Increased from 0.5 for stronger wind drift simulation
 
     private double flightTime = 0;              
     private boolean isStuck = false;
@@ -32,26 +33,20 @@ public class Arrow {
         this.vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
     }
 
-    // Replace the update method inside your Arrow.java file with this:
-
     public void update(Wind wind) {
         if (isStuck) return;
         
         flightTime += 0.026; 
-    
-        // Extract positive values and structural signs cleanly
+
         double windSpeed = wind.getSpeed();
         double signX = wind.getDirSignX();
         double signY = wind.getDirSignY();
-    
-        // Run the physical movement formulas using the positive wind speed
+
         double totalWindAcceleration = windSpeed * WIND_ACCEL_FACTOR;
         
-        // Apply directional signs after the squaring step to avoid negative squaring errors
         double driftX = 0.5 * totalWindAcceleration * flightTime * flightTime * signX;
         double driftY = 0.5 * totalWindAcceleration * flightTime * flightTime * signY;
-    
-        // Apply tracking updates directly to the arrow position parameters
+
         x = (vx * flightTime) + driftX;
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime) + driftY; 
         z = (vz * flightTime);
