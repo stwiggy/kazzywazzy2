@@ -1,6 +1,7 @@
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
 
 public class Arrow {
     public double x = 0;
@@ -41,10 +42,18 @@ public class Arrow {
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
+        
+        // Dynamic simulation updates to current instantaneous velocities
+        vx += aWind * 0.016;
+        vy += G * 0.016;
     }
     
     public void setStuck(boolean stuck) {
         this.isStuck = stuck;
+    }
+    
+    public boolean isStuck() {
+        return isStuck;
     }
     
     public void reset() {
@@ -55,36 +64,53 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // We only draw the flying model here. Once stuck, Target.java handles the green marker point.
         if (isStuck) return;
 
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
 
-        // Calculate current 2D screen positions based on 3D coordinates
-        int screenX = cx + (int)(x * perspectiveScale);
-        int screenY = cy + (int)(y * perspectiveScale);
+        double currentScale = 600.0 / (600.0 + z);
 
-        // Scale visual assets down dynamically as the arrow gets closer to DISTANCE_Z
-        int arrowLength = Math.max(10, (int)(80 * (1.0 - (z / Target.DISTANCE_Z))));
-        int thick = Math.max(1, (int)(4 * (1.0 - (z / Target.DISTANCE_Z))));
+        int screenX = cx + (int)(x * currentScale);
+        int screenY = cy + (int)(y * currentScale);
 
-        // 1. Draw Arrow Shaft (pointing directly into the screen center projection)
+        double sizeFactor = Math.max(0.1, 1.0 - (z / (Target.DISTANCE_Z * 1.5)));
+        int arrowLength = Math.max(6, (int)(80 * sizeFactor));
+        int thick = Math.max(1, (int)(4 * sizeFactor));
+
+        // 🎯 TILT CALCULATION:
+        // Calculate horizontal deviation angle (yaw) and vertical arc angle (pitch)
+        double headingAngle = Math.atan2(vx, vz); 
+        double pitchAngle = Math.atan2(vy, vz); 
+        
+        // Combine into a singular composite rotation angle for screen coordinates
+        // We add Math.PI / 2 because our raw arrow line asset points vertically down (0 degrees)
+        double totalRotation = headingAngle + pitchAngle + (Math.PI / 2);
+
+        // Save initial graphic context transformations
+        AffineTransform savedTransform = g.getTransform();
+
+        // Translate drawing context directly over the tip point, then rotate along heading vector
+        g.translate(screenX, screenY);
+        g.rotate(totalRotation);
+
+        // 1. Draw Arrow Shaft (drawn relative to the local translated origin 0,0)
         g.setStroke(new BasicStroke(thick, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.setColor(new Color(139, 69, 19)); // Wood brown
-        g.drawLine(screenX, screenY, screenX, screenY + arrowLength);
+        g.setColor(new Color(139, 69, 19)); 
+        g.drawLine(0, 0, 0, arrowLength);
 
-        // 2. Draw Fletching / Feathers (at the back of the shaft)
-        g.setStroke(new BasicStroke(thick + 2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+        // 2. Draw Fletching / Feathers
+        g.setStroke(new BasicStroke(thick + 1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
         g.setColor(Color.WHITE); 
-        g.drawLine(screenX - thick, screenY + arrowLength, screenX - thick - 4, screenY + arrowLength - 8);
-        g.drawLine(screenX + thick, screenY + arrowLength, screenX + thick + 4, screenY + arrowLength - 8);
+        g.drawLine(-thick, arrowLength, -thick - 3, arrowLength - 6);
+        g.drawLine(thick, arrowLength, thick + 3, arrowLength - 6);
 
         // 3. Draw Arrow Tip Nock
         g.setColor(Color.DARK_GRAY);
-        g.fillOval(screenX - thick, screenY - thick, thick * 2, thick * 2);
+        g.fillOval(-thick, -thick, thick * 2, thick * 2);
 
-        // Reset system stroke defaults
+        // Restore context state
+        g.setTransform(savedTransform);
         g.setStroke(new BasicStroke(1));
     }
 }
