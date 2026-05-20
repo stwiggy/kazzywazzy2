@@ -34,7 +34,6 @@ public class GamePanel extends JPanel implements ActionListener {
     private Arrow arrow;
     private Wind wind;
 
-    // Progression variables
     private int shotInLevel = 1;
     private final int MAX_SHOTS = 3;
     private int currentLevel = 1;
@@ -57,7 +56,6 @@ public class GamePanel extends JPanel implements ActionListener {
         requestFocusInWindow();
         setBackground(new Color(135, 206, 235));
 
-        // Hide default mouse pointer
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
             cursorImg, new Point(0, 0), "blank cursor");
@@ -67,7 +65,6 @@ public class GamePanel extends JPanel implements ActionListener {
         arrow = new Arrow();
         wind = new Wind();
         
-        // Initialize state for Level 1
         configureWindForLevel();
 
         MouseAdapter ma = new MouseAdapter() {
@@ -86,8 +83,6 @@ public class GamePanel extends JPanel implements ActionListener {
                         configureWindForLevel();
                         currentState = GameState.AIMING;
                         target.clearHits(); 
-                        
-                        // FIXED: Force zoom and charge variables back to default values
                         zoomLevel = 1.0;
                         chargeLevel = 0.0;
                     } else {
@@ -102,11 +97,9 @@ public class GamePanel extends JPanel implements ActionListener {
                 if (currentState == GameState.LEVEL_COMPLETE) {
                     currentLevel++;
                     shotInLevel = 1;
-                    target.clearHits(); 
+                    target.clearHits();
                     configureWindForLevel();
                     currentState = GameState.AIMING;
-                    
-                    // FIXED: Reset layout multipliers for the new level
                     zoomLevel = 1.0;
                     chargeLevel = 0.0;
                     return;
@@ -118,20 +111,18 @@ public class GamePanel extends JPanel implements ActionListener {
                     target.clearHits();
                     configureWindForLevel();
                     currentState = GameState.AIMING;
-                    
-                    // FIXED: Reset layout multipliers for a fresh game
                     zoomLevel = 1.0;
                     chargeLevel = 0.0;
                     return;
                 }
-        
+
                 if (currentState == GameState.AIMING) {
                     isDragging = true;
                     mouseX = e.getX();
                     mouseY = e.getY();
                 }
             }
-        
+
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (currentState == GameState.AIMING && isDragging) {
@@ -170,20 +161,16 @@ public class GamePanel extends JPanel implements ActionListener {
     private void configureWindForLevel() {
         if (currentLevel == 1) {
             wind.setWindForce(0); 
-            target.x = 0; 
-            target.y = 0; 
+            target.resetPosition();
             target.setMovementEnabled(false);
         } else if (currentLevel == 2) {
             wind.randomize(); 
-            target.x = 0; 
-            target.y = 0;
+            target.resetPosition();
             target.setMovementEnabled(false);
         } else {
             wind.randomize();
-            // Level 3 gale modifier
             wind.setWindForce(wind.getSpeed() * 2.2); 
-            // Turn on running movement mechanics for Level 3
-            target.setMovementEnabled(true);
+            target.setMovementEnabled(true); // Activate translation loops for level 3
         }
     }
 
@@ -201,7 +188,6 @@ public class GamePanel extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // Fast-paced UI updates
         if (currentState == GameState.AIMING && isDragging) {
             zoomLevel += (1.4 - zoomLevel) * 0.08; 
             chargeLevel += A_CONSTANT * 0.024;    
@@ -213,7 +199,7 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
 
-        // Run target positional interpolation if active and not on a menu screen
+        // Run vector changes safely inside the state frame checks
         if (currentLevel == 3 && currentState != GameState.ROUND_END && currentState != GameState.LEVEL_COMPLETE && currentState != GameState.GAME_OVER) {
             target.update();
         }
@@ -231,15 +217,14 @@ public class GamePanel extends JPanel implements ActionListener {
                     totalScore += lastScore;
                     target.addHit(arrow.x, arrow.y);
                     arrow.setStuck(true);
-                    
-                    target.setMovementEnabled(false); // Stop moving instantly on hit
+                    target.setMovementEnabled(false); // Stop target movement instantly on hit
                     currentState = GameState.ROUND_END;
                 }
             }
             
             if (arrow.z > Target.DISTANCE_Z * 1.5 || arrow.y > 800) {
                 lastScore = 0;
-                target.setMovementEnabled(false); // Stop moving instantly on miss
+                target.setMovementEnabled(false); // Stop target movement instantly on miss
                 currentState = GameState.ROUND_END;
             }
         }
@@ -255,11 +240,12 @@ public class GamePanel extends JPanel implements ActionListener {
 
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
+        // Dynamic camera translation matrix anchor point setup
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // Environment: Sky
+        // Fixed Environment Background (Sky and Ground)
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -267,7 +253,6 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
-        // Environment: Ground
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
@@ -275,11 +260,10 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(groundPaint);
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
 
+        // Draw Target and flying arrows safely without losing standard matrices
         double targetScale = 600.0 / Target.DISTANCE_Z;
-
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         
-        // Hide wind indicator on Level 1
         if (currentLevel > 1) {
             wind.draw(g2d, WIDTH, HEIGHT);
         }
@@ -290,10 +274,10 @@ public class GamePanel extends JPanel implements ActionListener {
 
         g2d.setTransform(oldTransform);
 
+        // Draw UI and HUD Overlay Elements
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
-            // Reticle Render
             g2d.setColor(new Color(0, 255, 0, 180)); 
             g2d.setStroke(new BasicStroke(2));
             g2d.drawOval(mouseX - 15, mouseY - 15, 30, 30);
