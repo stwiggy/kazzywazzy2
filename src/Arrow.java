@@ -12,6 +12,11 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
+    // Starting 3D position tracking
+    private double startX = 0;
+    private double startY = 0;
+    private double startZ = 0;
+    
     private static final double K = 450.0;       
     private static final double M = 0.02;       
     private static final double G = 9.8;        
@@ -20,17 +25,34 @@ public class Arrow {
     private double flightTime = 0;              
     private boolean isStuck = false;
 
-    public void launch(double drawDistance, double targetX, double targetY) {
+    // Modified to take the physical world-space launch origin
+    public void launch(double drawDistance, double targetX, double targetY, double launchOriginY) {
         reset();
 
         double eBow = 0.5 * K * (drawDistance * drawDistance);
+        // Base velocity calculation
         double v0 = Math.sqrt((2.0 * eBow) / M);
         
-        double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
+        // Match starting positions
+        this.startX = 0;
+        this.startY = launchOriginY; 
+        this.startZ = 0;
+
+        this.x = startX;
+        this.y = startY;
+        this.z = startZ;
         
-        this.vx = v0 * (targetX / distanceToTarget3D);
-        this.vy = v0 * (targetY / distanceToTarget3D); 
-        this.vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
+        // Calculate the vector from the bow base directly to the targeted crosshair spot
+        double dx = targetX - startX;
+        double dy = targetY - startY;
+        double dz = Target.DISTANCE_Z - startZ;
+        
+        double totalDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        // Assign proportional directional velocities based on the true muzzle vector
+        this.vx = v0 * (dx / totalDistance);
+        this.vy = v0 * (dy / totalDistance); 
+        this.vz = v0 * (dz / totalDistance);
     }
 
     public void update(Wind wind) {
@@ -39,11 +61,11 @@ public class Arrow {
         flightTime += 0.016; 
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
-        x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
-        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
-        z = (vz * flightTime);
+        // Kinematic equations extending out from the visual launch origin point
+        x = startX + (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
+        y = startY + (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
+        z = startZ + (vz * flightTime);
         
-        // Dynamic simulation updates to current instantaneous velocities
         vx += aWind * 0.016;
         vy += G * 0.016;
     }
@@ -59,6 +81,7 @@ public class Arrow {
     public void reset() {
         x = 0; y = 0; z = 0;
         vx = 0; vy = 0; vz = 0;
+        startX = 0; startY = 0; startZ = 0;
         flightTime = 0;
         isStuck = false;
     }
@@ -69,6 +92,7 @@ public class Arrow {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
 
+        // Dynamic scale relative to depth positioning matrix
         double currentScale = 600.0 / (600.0 + z);
 
         int screenX = cx + (int)(x * currentScale);
@@ -78,38 +102,31 @@ public class Arrow {
         int arrowLength = Math.max(6, (int)(80 * sizeFactor));
         int thick = Math.max(1, (int)(4 * sizeFactor));
 
-        // 🎯 TILT CALCULATION:
-        // Calculate horizontal deviation angle (yaw) and vertical arc angle (pitch)
+        // Calculate travel heading angles
         double headingAngle = Math.atan2(vx, vz); 
         double pitchAngle = Math.atan2(vy, vz); 
-        
-        // Combine into a singular composite rotation angle for screen coordinates
-        // We add Math.PI / 2 because our raw arrow line asset points vertically down (0 degrees)
         double totalRotation = headingAngle + pitchAngle + (Math.PI / 2);
 
-        // Save initial graphic context transformations
         AffineTransform savedTransform = g.getTransform();
 
-        // Translate drawing context directly over the tip point, then rotate along heading vector
         g.translate(screenX, screenY);
         g.rotate(totalRotation);
 
-        // 1. Draw Arrow Shaft (drawn relative to the local translated origin 0,0)
+        // Draw Arrow Shaft
         g.setStroke(new BasicStroke(thick, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(new Color(139, 69, 19)); 
         g.drawLine(0, 0, 0, arrowLength);
 
-        // 2. Draw Fletching / Feathers
+        // Draw Fletching / Feathers
         g.setStroke(new BasicStroke(thick + 1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
         g.setColor(Color.WHITE); 
         g.drawLine(-thick, arrowLength, -thick - 3, arrowLength - 6);
         g.drawLine(thick, arrowLength, thick + 3, arrowLength - 6);
 
-        // 3. Draw Arrow Tip Nock
+        // Draw Arrow Tip
         g.setColor(Color.DARK_GRAY);
         g.fillOval(-thick, -thick, thick * 2, thick * 2);
 
-        // Restore context state
         g.setTransform(savedTransform);
         g.setStroke(new BasicStroke(1));
     }
