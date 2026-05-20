@@ -54,7 +54,10 @@ public class GamePanel extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         requestFocusInWindow();
+        
+        // FIXED: Enforce clear, solid fallback background properties
         setBackground(new Color(135, 206, 235));
+        setDoubleBuffered(true);
 
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
@@ -170,7 +173,7 @@ public class GamePanel extends JPanel implements ActionListener {
         } else {
             wind.randomize();
             wind.setWindForce(wind.getSpeed() * 2.2); 
-            target.setMovementEnabled(true); // Activate translation loops for level 3
+            target.setMovementEnabled(true); 
         }
     }
 
@@ -199,7 +202,6 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
 
-        // Run vector changes safely inside the state frame checks
         if (currentLevel == 3 && currentState != GameState.ROUND_END && currentState != GameState.LEVEL_COMPLETE && currentState != GameState.GAME_OVER) {
             target.update();
         }
@@ -217,14 +219,14 @@ public class GamePanel extends JPanel implements ActionListener {
                     totalScore += lastScore;
                     target.addHit(arrow.x, arrow.y);
                     arrow.setStuck(true);
-                    target.setMovementEnabled(false); // Stop target movement instantly on hit
+                    target.setMovementEnabled(false); 
                     currentState = GameState.ROUND_END;
                 }
             }
             
             if (arrow.z > Target.DISTANCE_Z * 1.5 || arrow.y > 800) {
                 lastScore = 0;
-                target.setMovementEnabled(false); // Stop target movement instantly on miss
+                target.setMovementEnabled(false); 
                 currentState = GameState.ROUND_END;
             }
         }
@@ -234,47 +236,46 @@ public class GamePanel extends JPanel implements ActionListener {
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
+        // FIXED: Force a clean canvas color fill to prevent buffer leaks
+        g.setColor(getBackground());
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
-        
-        // Dynamic camera translation matrix anchor point setup
-        g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
-        g2d.scale(zoomLevel, zoomLevel);
-        g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
+        // --- SECTION 1: Fixed Environment Painting Block ---
+        Graphics2D envG = (Graphics2D) g2d.create();
+        envG.translate(WIDTH / 2.0, HEIGHT / 2.0);
+        envG.scale(zoomLevel, zoomLevel);
+        envG.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // Fixed Environment Background (Sky and Ground)
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
         );
-        g2d.setPaint(skyPaint);
-        g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
+        envG.setPaint(skyPaint);
+        envG.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
         );
-        g2d.setPaint(groundPaint);
-        g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
+        envG.setPaint(groundPaint);
+        envG.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
 
-        // Draw Target and flying arrows safely without losing standard matrices
         double targetScale = 600.0 / Target.DISTANCE_Z;
-        target.draw(g2d, WIDTH, HEIGHT, targetScale);
-        
+        target.draw(envG, WIDTH, HEIGHT, targetScale);
+
+        if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
+            arrow.draw(envG, WIDTH, HEIGHT, targetScale);
+        }
+        envG.dispose(); // Instantly commit environment pipeline modifications to the screen
+
+        // --- SECTION 2: Dynamic Game Elements & Overlays ---
         if (currentLevel > 1) {
             wind.draw(g2d, WIDTH, HEIGHT);
         }
 
-        if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
-            arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
-        }
-
-        g2d.setTransform(oldTransform);
-
-        // Draw UI and HUD Overlay Elements
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
@@ -284,7 +285,6 @@ public class GamePanel extends JPanel implements ActionListener {
             g2d.drawLine(mouseX - 25, mouseY, mouseX - 5, mouseY);
             g2d.drawLine(mouseX + 5, mouseY, mouseX + 25, mouseY);
             g2d.fillOval(mouseX - 2, mouseY - 2, 4, 4); 
-            g2d.setStroke(new BasicStroke(1));
             
             if (isDragging) {
                 g2d.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -297,22 +297,21 @@ public class GamePanel extends JPanel implements ActionListener {
                 g2d.setColor(chargeColor);
                 int angle = (int)(360 * ratio);
                 g2d.drawArc(mouseX - 40, mouseY - 40, 80, 80, 90, -angle);
-                g2d.setStroke(new BasicStroke(1));
             }
         }
 
         drawUI(g2d);
+        g2d.dispose();
     }
 
     private void drawBow(Graphics2D g2d) {
         double bowBaseX = WIDTH / 2.0;
         double bowBaseY = HEIGHT - 50.0;
-        
         double angle = Math.atan2(mouseY - bowBaseY, mouseX - bowBaseX) - Math.PI / 2;
         
-        java.awt.geom.AffineTransform initialTransform = g2d.getTransform();
-        g2d.translate(bowBaseX, bowBaseY);
-        g2d.rotate(angle);
+        Graphics2D bowG = (Graphics2D) g2d.create();
+        bowG.translate(bowBaseX, bowBaseY);
+        bowG.rotate(angle);
         
         int tensionY = (int)(chargeLevel * 15); 
         int bottomY = tensionY; 
@@ -326,43 +325,42 @@ public class GamePanel extends JPanel implements ActionListener {
             -300, bottomY - 100, new Color(101, 67, 33), 
             300, bottomY - 100, new Color(139, 69, 19)
         );
-        g2d.setPaint(woodPaint);
-        g2d.fill(bowPath);
+        bowG.setPaint(woodPaint);
+        bowG.fill(bowPath);
         
-        g2d.setColor(new Color(40, 40, 40));
-        g2d.fillRoundRect(-15, bottomY - 20, 30, 40, 10, 10);
+        bowG.setColor(new Color(40, 40, 40));
+        bowG.fillRoundRect(-15, bottomY - 20, 30, 40, 10, 10);
         
-        g2d.setColor(new Color(220, 220, 220, 200)); 
-        g2d.setStroke(new BasicStroke(3)); 
+        bowG.setColor(new Color(220, 220, 220, 200)); 
+        bowG.setStroke(new BasicStroke(3)); 
         
         if (isDragging) {
-            g2d.drawLine(-290, bottomY - 90, 0, bottomY + tensionY); 
-            g2d.drawLine(290, bottomY - 90, 0, bottomY + tensionY); 
+            bowG.drawLine(-290, bottomY - 90, 0, bottomY + tensionY); 
+            bowG.drawLine(290, bottomY - 90, 0, bottomY + tensionY); 
             
-            g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect(-3, bottomY - 150 + tensionY, 6, 150);
+            bowG.setColor(new Color(50, 50, 50));
+            bowG.fillRect(-3, bottomY - 150 + tensionY, 6, 150);
             
-            g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{-3, -15, -3}, new int[]{bottomY - 20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
-            g2d.fillPolygon(new int[]{3, 15, 3}, new int[]{bottomY - 20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
+            bowG.setColor(new Color(200, 50, 50));
+            bowG.fillPolygon(new int[]{-3, -15, -3}, new int[]{bottomY - 20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
+            bowG.fillPolygon(new int[]{3, 15, 3}, new int[]{bottomY - 20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
             
-            g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 150 + tensionY, bottomY - 160 + tensionY, bottomY - 150 + tensionY}, 3);
+            bowG.setColor(Color.LIGHT_GRAY);
+            bowG.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 150 + tensionY, bottomY - 160 + tensionY, bottomY - 150 + tensionY}, 3);
         } else {
-            g2d.drawLine(-290, bottomY - 90, 290, bottomY - 90);
+            bowG.drawLine(-290, bottomY - 90, 290, bottomY - 90);
             
-            g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect(-3, bottomY - 100, 6, 100);
+            bowG.setColor(new Color(50, 50, 50));
+            bowG.fillRect(-3, bottomY - 100, 6, 100);
             
-            g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{-3, -15, -3}, new int[]{bottomY - 20, bottomY, bottomY}, 3);
-            g2d.fillPolygon(new int[]{3, 15, 3}, new int[]{bottomY - 20, bottomY, bottomY}, 3);
+            bowG.setColor(new Color(200, 50, 50));
+            bowG.fillPolygon(new int[]{-3, -15, -3}, new int[]{bottomY - 20, bottomY, bottomY}, 3);
+            bowG.fillPolygon(new int[]{3, 15, 3}, new int[]{bottomY - 20, bottomY, bottomY}, 3);
             
-            g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 100, bottomY - 110, bottomY - 100}, 3);
+            bowG.setColor(Color.LIGHT_GRAY);
+            bowG.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 100, bottomY - 110, bottomY - 100}, 3);
         }
-        g2d.setTransform(initialTransform);
-        g2d.setStroke(new BasicStroke(1));
+        bowG.dispose();
     }
 
     private void drawUI(Graphics2D g2d) {
