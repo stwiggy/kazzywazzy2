@@ -157,7 +157,7 @@ public class GamePanel extends JPanel implements ActionListener {
             if (chargeLevel > 1.0) chargeLevel = 1.0;
         } else {
             zoomLevel += (1.0 - zoomLevel) * 0.1;
-            if (currentState != GameState.ARROW_FLYING) {
+            if (currentState != GameState.ARROW_FLYING && currentState != GameState.ROUND_END) {
                 chargeLevel = 0.0;
             }
         }
@@ -168,6 +168,7 @@ public class GamePanel extends JPanel implements ActionListener {
             if (arrow.z >= Target.DISTANCE_Z) {
                 lastScore = target.calculateScore(arrow.x, arrow.y);
                 totalScore += lastScore;
+                arrow.setStuck(true);
                 currentState = GameState.ROUND_END;
             }
             
@@ -208,14 +209,12 @@ public class GamePanel extends JPanel implements ActionListener {
 
         double cameraZ = 0; 
         double targetZDist = Target.DISTANCE_Z - cameraZ;
-        
-        // 🔴 EDITED SECTION: Reduced from 1000.0 to 600.0 to crush the visual perspective size
         double targetScale = 600.0 / targetZDist;
 
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         wind.draw(g2d, WIDTH, HEIGHT);
 
-        if (currentState == GameState.ARROW_FLYING) {
+        if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
             double arrowDist = arrow.z - cameraZ;
             if (arrowDist < 1) arrowDist = 1;
             double arrowScale = 600.0 / arrowDist;
