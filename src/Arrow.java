@@ -11,6 +11,7 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
+    // Fast flight settings from your updates
     private static final double K = 450.0;       
     private static final double M = 0.02;       
     private static final double G = 9.8;        
@@ -19,6 +20,7 @@ public class Arrow {
     private double flightTime = 0;              
     private boolean isStuck = false;
 
+    // Reverted back to taking exactly 3 parameters (no launchOriginY)
     public void launch(double drawDistance, double targetX, double targetY) {
         reset();
 
@@ -27,6 +29,7 @@ public class Arrow {
         
         double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
         
+        // Launching directly down the center line from (0,0,0)
         this.vx = v0 * (targetX / distanceToTarget3D);
         this.vy = v0 * (targetY / distanceToTarget3D); 
         this.vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
@@ -47,6 +50,10 @@ public class Arrow {
         this.isStuck = stuck;
     }
     
+    public boolean isStuck() {
+        return isStuck;
+    }
+    
     public void reset() {
         x = 0; y = 0; z = 0;
         vx = 0; vy = 0; vz = 0;
@@ -55,26 +62,25 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // We only draw the flying model here. Once stuck, Target.java handles the green marker point.
         if (isStuck) return;
 
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
 
-        // Calculate current 2D screen positions based on 3D coordinates
+        // Calculate screen projection based on the target plane perspective scale
         int screenX = cx + (int)(x * perspectiveScale);
         int screenY = cy + (int)(y * perspectiveScale);
 
-        // Scale visual assets down dynamically as the arrow gets closer to DISTANCE_Z
+        // Scale the arrow's visual length down as it gets closer to the target distance
         int arrowLength = Math.max(10, (int)(80 * (1.0 - (z / Target.DISTANCE_Z))));
         int thick = Math.max(1, (int)(4 * (1.0 - (z / Target.DISTANCE_Z))));
 
-        // 1. Draw Arrow Shaft (pointing directly into the screen center projection)
+        // 1. Draw Arrow Shaft
         g.setStroke(new BasicStroke(thick, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(new Color(139, 69, 19)); // Wood brown
         g.drawLine(screenX, screenY, screenX, screenY + arrowLength);
 
-        // 2. Draw Fletching / Feathers (at the back of the shaft)
+        // 2. Draw Fletching / Feathers
         g.setStroke(new BasicStroke(thick + 2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
         g.setColor(Color.WHITE); 
         g.drawLine(screenX - thick, screenY + arrowLength, screenX - thick - 4, screenY + arrowLength - 8);
@@ -84,7 +90,6 @@ public class Arrow {
         g.setColor(Color.DARK_GRAY);
         g.fillOval(screenX - thick, screenY - thick, thick * 2, thick * 2);
 
-        // Reset system stroke defaults
         g.setStroke(new BasicStroke(1));
     }
 }
