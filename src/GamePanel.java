@@ -186,27 +186,30 @@ public class GamePanel extends JPanel implements ActionListener {
         arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
 
+    // Replace the actionPerformed method in your GamePanel.java with this updated frame cycle:
+
     @Override
     public void actionPerformed(ActionEvent e) {
+        // Speeds up camera zoom transitions and draw time animations slightly without altering physics equations
         if (currentState == GameState.AIMING && isDragging) {
-            zoomLevel += (1.4 - zoomLevel) * 0.05;
-            chargeLevel += A_CONSTANT * 0.016; 
+            zoomLevel += (1.4 - zoomLevel) * 0.08; // Faster camera tracking update
+            chargeLevel += A_CONSTANT * 0.024;    // Faster bow drawing/charging speed
             if (chargeLevel > 3.5) chargeLevel = 3.5; 
         } else {
-            zoomLevel += (1.0 - zoomLevel) * 0.1;
+            zoomLevel += (1.0 - zoomLevel) * 0.15;
             if (currentState != GameState.ARROW_FLYING && currentState != GameState.ROUND_END) {
                 chargeLevel = 0.0;
             }
         }
-
+    
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
-
+    
             if (arrow.z >= Target.DISTANCE_Z && !arrow.isStuck()) {
                 double dx = arrow.x - target.x;
                 double dy = arrow.y - target.y;
                 double distance = Math.sqrt(dx * dx + dy * dy);
-
+    
                 if (distance <= target.radius) {
                     lastScore = target.calculateScore(arrow.x, arrow.y);
                     totalScore += lastScore;
@@ -221,7 +224,7 @@ public class GamePanel extends JPanel implements ActionListener {
                 currentState = GameState.ROUND_END;
             }
         }
-
+    
         repaint();
     }
 
