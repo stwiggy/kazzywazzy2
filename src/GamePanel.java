@@ -131,27 +131,19 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void shootArrow() {
         currentState = GameState.ARROW_FLYING;
-        arrow.reset();
         
-        // The pull back distance could determine power, but we'll use fixed power for simplicity,
-        arrow.vz = 10.0 + 20.0 * chargeLevel; // Speed depends on charge
-        
-        // Calculate world coordinates the user is aiming at, accounting for zoom
+        // 1. Account for camera zoom transformations to read true mouse placement
         double wx = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
         double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
         
-        // Center of the 3D world projection is WIDTH / 2, HEIGHT / 2 - 100
-        double x_world = wx - (WIDTH / 2.0);
-        double y_world = wy - (HEIGHT / 2.0 - 100.0);
+        // 2. Convert raw crosshair pixels into 3D world meters relative to central horizon (0,0,0)
+        double targetAimX = (wx - (WIDTH / 2.0)) / 40.0;
+        double targetAimY = (wy - (HEIGHT / 2.0)) / 40.0;
         
-        // Time to reach the target plane
-        double t = Target.DISTANCE_Z / arrow.vz;
-        
-        // Calculate initial velocities to hit the target point
-        arrow.vx = x_world / t;
-        arrow.vy = y_world / t;
+        // 3. Fire velocity calculations through the updated high-speed vector launcher
+        // This single line replaces all the old arrow.vx / arrow.vy / arrow.vz assignments!
+        arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
-
     @Override
     public void actionPerformed(ActionEvent e) {
         // Update zoom and charge
