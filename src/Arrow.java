@@ -11,94 +11,80 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    private static final double K = 150.0;       
-    private static final double M = 0.05;       
-    private static final double G = 9.8;        
-    private static final double WIND_ACCEL_FACTOR = 0.5; 
-
-    private double flightTime = 0;              
-    private boolean isStuck = false;
-
-    public void launch(double drawDistance, double targetX, double targetY) {
-        reset();
-
-        double eBow = 0.5 * K * (drawDistance * drawDistance);
-        double v0 = Math.sqrt((2.0 * eBow) / M);
-        double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
-        
-        double phi = Math.asin(targetY / distanceToTarget3D);
-        double theta = Math.atan2(targetX, Target.DISTANCE_Z);
-
-        this.vx = v0 * Math.cos(phi) * Math.sin(theta);
-        this.vy = v0 * Math.sin(phi); 
-        this.vz = v0 * Math.cos(phi) * Math.cos(theta);
-    }
+    // Physics constants
+    private static final double GRAVITY = 0.0; // Set to 0 so the arrow flies straight
+    private static final double WIND_EFFECT = 0.1;
 
     public void update(Wind wind) {
-        if (isStuck) return;
+        // Apply velocities
+        x += vx;
+        y += vy;
+        z += vz;
         
-        flightTime += 0.016; 
-        double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
-
-        x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
-        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
-        z = (vz * flightTime);
-    }
-    
-    public void setStuck(boolean stuck) {
-        this.isStuck = stuck;
+        // Apply gravity
+        vy += GRAVITY;
+        
+        // Apply wind (pushes horizontally)
+        vx += wind.getWindForce() * WIND_EFFECT;
     }
     
     public void reset() {
-        x = 0; y = 0; z = 0;
-        vx = 0; vy = 0; vz = 0;
-        flightTime = 0;
-        isStuck = false;
+        x = 0;
+        y = 0;
+        z = 0;
+        vx = 0;
+        vy = 0;
+        vz = 0;
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
         
+        // Project tail (back) of the arrow to 2D screen
         int tailScreenX = cx + (int)(x * perspectiveScale);
         int tailScreenY = cy + (int)(y * perspectiveScale);
         
-        double arrowLength3D = isStuck ? 15.0 : 50.0;
+        // Calculate the position of the tip of the arrow in 3D
+        double arrowLength3D = 60.0;
         double tipZ = z + arrowLength3D;
-        double tipScale = 600.0 / Math.max(1, tipZ);
+        double tipScale = 1000.0 / Math.max(1, tipZ);
         
+        // Project tip to 2D screen
         int tipScreenX = cx + (int)(x * tipScale);
         int tipScreenY = cy + (int)(y * tipScale);
         
-        g.setColor(new Color(200, 200, 200)); 
-        g.setStroke(new BasicStroke(Math.max(2, (int)(4 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        // Draw the shaft
+        g.setColor(new Color(200, 200, 200)); // Silver/carbon fiber arrow shaft
+        g.setStroke(new BasicStroke(Math.max(2, (int)(5 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.drawLine(tailScreenX, tailScreenY, tipScreenX, tipScreenY);
         
-        int fletchSize = Math.max(3, (int)(10 * perspectiveScale));
-        g.setColor(new Color(220, 50, 50, 200)); 
+        // Draw fletchings (more realistic polygons)
+        int fletchSize = Math.max(3, (int)(15 * perspectiveScale));
+        g.setColor(new Color(200, 50, 50, 200)); // Translucent red
         
-        double dx = tipScreenX - tailScreenX;
-        double dy = tipScreenY - tailScreenY;
-        double len = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+        // Offset a bit from the very back
+        int fletchStartX = tailScreenX + (tipScreenX - tailScreenX) / 10;
+        int fletchStartY = tailScreenY + (tipScreenY - tailScreenY) / 10;
         
-        double nx = -dy / len;
-        double ny = dx / len;
+        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX - fletchSize}, 
+                      new int[]{fletchStartY, tailScreenY, tailScreenY - fletchSize}, 3);
+        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX + fletchSize}, 
+                      new int[]{fletchStartY, tailScreenY, tailScreenY - fletchSize}, 3);
+        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX}, 
+                      new int[]{fletchStartY, tailScreenY, tailScreenY + fletchSize}, 3);
+
+        // Arrowhead (if tip is visible, draw a small point)
+        int headSize = Math.max(2, (int)(8 * tipScale));
+        g.setColor(Color.DARK_GRAY);
+        g.fillPolygon(new int[]{tipScreenX, tipScreenX - headSize, tipScreenX + headSize}, 
+                      new int[]{tipScreenY + headSize, tipScreenY - headSize, tipScreenY - headSize}, 3);
+
+        // Nock
+        g.setColor(Color.WHITE);
+        int nockSize = Math.max(3, (int)(6 * perspectiveScale));
+        g.fillOval(tailScreenX - nockSize/2, tailScreenY - nockSize/2, nockSize, nockSize);
         
-        g.fillPolygon(
-            new int[]{tailScreenX, (int)(tailScreenX + nx * fletchSize), (int)(tailScreenX + (dx / len) * fletchSize)},
-            new int[]{tailScreenY, (int)(tailScreenY + ny * fletchSize), (int)(tailScreenY + (dy / len) * fletchSize)},
-            3
-        );
-        g.fillPolygon(
-            new int[]{tailScreenX, (int)(tailScreenX - nx * fletchSize), (int)(tailScreenX + (dx / len) * fletchSize)},
-            new int[]{tailScreenY, (int)(tailScreenY - ny * fletchSize), (int)(tailScreenY + (dy / len) * fletchSize)},
-            3
-        );
-        
-        if (isStuck) {
-            g.setColor(new Color(0, 0, 0, 150));
-            g.fillOval(tipScreenX - 3, tipScreenY - 3, 6, 6);
-        }
         g.setStroke(new BasicStroke(1));
     }
 }
