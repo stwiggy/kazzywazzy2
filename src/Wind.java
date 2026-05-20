@@ -16,9 +16,11 @@ public class Wind {
         randomize();
     }
 
+    // Replace the randomize() method inside your Wind.java with this heavier weather version:
+
     public void randomize() {
-        // Base positive speed calculation
-        this.speed = 3.0 + (random.nextDouble() * 6.0);
+        // FIXED: Increased base speed minimum to 6.0 and max potential to 16.0 m/s
+        this.speed = 6.0 + (random.nextDouble() * 10.0);
         
         // Pick a random style of wind: 0 = Horizontal, 1 = Vertical, 2 = Diagonal
         int windType = random.nextInt(3);
