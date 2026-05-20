@@ -256,10 +256,15 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(null); // reset paint state
     
         double targetScale = 600.0 / Target.DISTANCE_Z;
-        target.draw(g2d, WIDTH, HEIGHT, targetScale);
+        Graphics2D g2dTarget = (Graphics2D) g2d.create();
+        g2dTarget.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        target.draw(g2dTarget, WIDTH, HEIGHT, targetScale);
+        g2dTarget.dispose();
         
         if (currentLevel > 1) {
-            wind.draw(g2d, WIDTH, HEIGHT);
+            Graphics2D g2dWind = (Graphics2D) g2d.create();
+            wind.draw(g2dWind, WIDTH, HEIGHT);
+            g2dWind.dispose();
         }
     
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
