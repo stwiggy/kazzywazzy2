@@ -14,26 +14,28 @@ public class Target {
     public double y = 0;
     public double radius = 150.0;
     
-    // Persistent list holding all coordinates where an arrow pins the board face
-    private final List<Point2D.Double> hitPoints = new ArrayList<>();
+    // Stores the relative offset (dx, dy) from the target's center
+    private final List<Point2D.Double> relativeHitOffsets = new ArrayList<>();
     
     private static final Color[] RING_COLORS = {
         Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW
     };
 
     public void addHit(double impactX, double impactY) {
-        hitPoints.add(new Point2D.Double(impactX, impactY));
+        // Calculate the exact offset from the target center immediately on impact
+        double dx = impactX - this.x;
+        double dy = impactY - this.y;
+        relativeHitOffsets.add(new Point2D.Double(dx, dy));
     }
 
     public void clearHits() {
-        hitPoints.clear();
+        relativeHitOffsets.clear();
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100; 
         
-        // Synced with original arrow kinematic trajectory space (Down is positive)
         int screenX = cx + (int)(x * perspectiveScale);
         int screenY = cy + (int)(y * perspectiveScale); 
         int screenRadius = (int)(radius * perspectiveScale);
@@ -84,25 +86,26 @@ public class Target {
             g.drawLine(screenX, screenY - 5, screenX, screenY + 5);
         }
 
-        // --- Draw Saved Persistent Arrow Hits ---
-        for (Point2D.Double hit : hitPoints) {
-            // Uses identical scaling + tracking logic to keep dots locked on target surface
-            int hitScreenX = cx + (int)(hit.x * perspectiveScale);
-            int hitScreenY = cy + (int)(hit.y * perspectiveScale);
-            int markerSize = Math.max(6, (int)(10 * perspectiveScale));
+        // --- Draw Saved Hits (Locked to Target Center) ---
+        for (Point2D.Double offset : relativeHitOffsets) {
+            // Apply scale directly to the offset relative to screenX/screenY
+            int hitScreenX = screenX + (int)(offset.x * perspectiveScale);
+            int hitScreenY = screenY + (int)(offset.y * perspectiveScale);
+            
+            // 🔴 MODIFIED: Made base dot size significantly larger (increased from 6/10 to 14/20)
+            int markerSize = Math.max(14, (int)(20 * perspectiveScale));
 
-            // Outer dark impact puncture circle
-            g.setColor(new Color(20, 20, 20, 200));
+            // Outer puncture circle
+            g.setColor(new Color(20, 20, 20, 220));
             g.fillOval(hitScreenX - markerSize / 2, hitScreenY - markerSize / 2, markerSize, markerSize);
 
             // Inner highly visible red point marker
-            g.setColor(new Color(255, 50, 50));
+            g.setColor(new Color(255, 40, 40));
             g.fillOval(hitScreenX - markerSize / 4, hitScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
         }
     }
     
     public int calculateScore(double impactX, double impactY) {
-        // Keeps collision math 100% in sync with visual coordinates
         double dx = impactX - x;
         double dy = impactY - y;
         double distance = Math.sqrt(dx * dx + dy * dy);
