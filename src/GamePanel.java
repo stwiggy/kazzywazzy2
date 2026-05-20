@@ -70,62 +70,65 @@ public class GamePanel extends JPanel implements ActionListener {
         configureWindForLevel();
 
         MouseAdapter ma = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                if (currentState == GameState.START_SCREEN) {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            if (currentState == GameState.START_SCREEN) {
+                currentState = GameState.AIMING;
+                isDragging = true;
+                mouseX = e.getX();
+                mouseY = e.getY();
+                return;
+            }
+            if (currentState == GameState.ROUND_END) {
+                if (shotInLevel < MAX_SHOTS) {
+                    shotInLevel++;
+                    configureWindForLevel();
                     currentState = GameState.AIMING;
-                    isDragging = true;
-                    mouseX = e.getX();
-                    mouseY = e.getY();
-                    return;
-                }
-                if (currentState == GameState.ROUND_END) {
-                    if (shotInLevel < MAX_SHOTS) {
-                        shotInLevel++;
-                        configureWindForLevel();
-                        currentState = GameState.AIMING;
+                    // FIXED: Clear the previous shot's green mark ONLY when 
+                    // the player actively clicks to start aiming the next arrow.
+                    target.clearHits(); 
+                } else {
+                    if (currentLevel < MAX_LEVELS) {
+                        currentState = GameState.LEVEL_COMPLETE;
                     } else {
-                        // 3 shots completed in this level
-                        if (currentLevel < MAX_LEVELS) {
-                            currentState = GameState.LEVEL_COMPLETE;
-                        } else {
-                            currentState = GameState.GAME_OVER;
-                        }
+                        currentState = GameState.GAME_OVER;
                     }
-                    return;
                 }
-                if (currentState == GameState.LEVEL_COMPLETE) {
-                    currentLevel++;
-                    shotInLevel = 1;
-                    configureWindForLevel();
-                    currentState = GameState.AIMING;
-                    return;
-                }
-                if (currentState == GameState.GAME_OVER) {
-                    currentLevel = 1;
-                    shotInLevel = 1;
-                    totalScore = 0;
-                    target.clearHits();
-                    configureWindForLevel();
-                    currentState = GameState.AIMING;
-                    return;
-                }
-
-                if (currentState == GameState.AIMING) {
-                    isDragging = true;
-                    mouseX = e.getX();
-                    mouseY = e.getY();
-                }
+                return;
             }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (currentState == GameState.AIMING && isDragging) {
-                    isDragging = false;
-                    shootArrow();
-                }
+            if (currentState == GameState.LEVEL_COMPLETE) {
+                currentLevel++;
+                shotInLevel = 1;
+                target.clearHits(); // Clear the board when moving to a brand new level
+                configureWindForLevel();
+                currentState = GameState.AIMING;
+                return;
             }
-        };
+            if (currentState == GameState.GAME_OVER) {
+                currentLevel = 1;
+                shotInLevel = 1;
+                totalScore = 0;
+                target.clearHits();
+                configureWindForLevel();
+                currentState = GameState.AIMING;
+                return;
+            }
+    
+            if (currentState == GameState.AIMING) {
+                isDragging = true;
+                mouseX = e.getX();
+                mouseY = e.getY();
+            }
+        }
+    
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            if (currentState == GameState.AIMING && isDragging) {
+                isDragging = false;
+                shootArrow();
+            }
+        }
+    };
 
         MouseMotionAdapter mma = new MouseMotionAdapter() {
             @Override
