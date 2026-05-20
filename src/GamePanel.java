@@ -44,8 +44,11 @@ public class GamePanel extends JPanel implements ActionListener {
     private boolean isDragging = false;
     
     private double zoomLevel = 1.0;
-    private double chargeLevel = 0.0;
     
+    // x = a * t tracking parameters
+    private double chargeLevel = 0.0; // Acts as draw distance variable 'x'
+    private static final double A_CONSTANT = 2.5; // Draw acceleration rate factor 'a'
+
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
@@ -133,28 +136,26 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void shootArrow() {
         currentState = GameState.ARROW_FLYING;
-        arrow.reset();
         
-        arrow.vz = 100.0 + 200.0 * chargeLevel; 
-        
+        // Align mouse scaling relative to scene viewport space
         double wx = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
         double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
         
-        double x_world = wx - (WIDTH / 2.0);
-        double y_world = wy - (HEIGHT / 2.0 - 100.0);
+        double targetAimX = wx - (WIDTH / 2.0);
+        double targetAimY = wy - (HEIGHT / 2.0 - 100.0);
         
-        double t = Target.DISTANCE_Z / arrow.vz;
-        
-        arrow.vx = x_world / t;
-        arrow.vy = y_world / t;
+        // Launch calculation using draw distance variable
+        arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (currentState == GameState.AIMING && isDragging) {
-            zoomLevel += (1.5 - zoomLevel) * 0.1;
-            chargeLevel += 0.02;
-            if (chargeLevel > 1.0) chargeLevel = 1.0;
+            zoomLevel += (1.4 - zoomLevel) * 0.05;
+            
+            // x = a * t loop step integration logic
+            chargeLevel += A_CONSTANT * 0.016; 
+            if (chargeLevel > 3.5) chargeLevel = 3.5; // Safe maximum physical elasticity cap
         } else {
             zoomLevel += (1.0 - zoomLevel) * 0.1;
             if (currentState != GameState.ARROW_FLYING && currentState != GameState.ROUND_END) {
@@ -172,7 +173,7 @@ public class GamePanel extends JPanel implements ActionListener {
                 currentState = GameState.ROUND_END;
             }
             
-            if (arrow.y > 600) {
+            if (arrow.y > 800) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
             }
@@ -231,8 +232,6 @@ public class GamePanel extends JPanel implements ActionListener {
             g2d.drawOval(mouseX - 15, mouseY - 15, 30, 30);
             g2d.drawLine(mouseX - 25, mouseY, mouseX - 5, mouseY);
             g2d.drawLine(mouseX + 5, mouseY, mouseX + 25, mouseY);
-            g2d.drawLine(mouseX, mouseY - 25, mouseX, mouseY - 5);
-            g2d.drawLine(mouseX, mouseY + 5, mouseX, mouseY + 25);
             g2d.fillOval(mouseX - 2, mouseY - 2, 4, 4); 
             g2d.setStroke(new BasicStroke(1));
             
@@ -241,9 +240,11 @@ public class GamePanel extends JPanel implements ActionListener {
                 g2d.setColor(new Color(0, 0, 0, 100)); 
                 g2d.drawOval(mouseX - 40, mouseY - 40, 80, 80);
                 
-                Color chargeColor = new Color((int)(255 * chargeLevel), (int)(255 * (1 - chargeLevel)), 0);
+                double maxCap = 3.5;
+                double ratio = chargeLevel / maxCap;
+                Color chargeColor = new Color((int)(255 * ratio), (int)(255 * (1.0 - ratio)), 0);
                 g2d.setColor(chargeColor);
-                int angle = (int)(360 * chargeLevel);
+                int angle = (int)(360 * ratio);
                 g2d.drawArc(mouseX - 40, mouseY - 40, 80, 80, 90, -angle);
                 g2d.setStroke(new BasicStroke(1));
             }
@@ -254,9 +255,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void drawBow(Graphics2D g2d) {
         double dynamicBowX = mouseX;
-        int tensionY = (int)(chargeLevel * 45); 
-        
-        // 🔴 EDITED: Replaced HEIGHT constant layout anchor with mouseY cursor tracking anchor
+        int tensionY = (int)(chargeLevel * 15); 
         int dynamicBowY = mouseY + 250; 
         int bottomY = dynamicBowY + tensionY; 
         
