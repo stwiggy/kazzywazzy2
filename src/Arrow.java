@@ -32,24 +32,28 @@ public class Arrow {
         this.vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
     }
 
+    // Replace the update method inside your Arrow.java file with this:
+
     public void update(Wind wind) {
         if (isStuck) return;
         
-        // Increased time step per frame (from 0.016 to 0.026) to make the arrow travel faster
         flightTime += 0.026; 
+    
+        // Extract positive values and structural signs cleanly
+        double windSpeed = wind.getSpeed();
+        double signX = wind.getDirSignX();
+        double signY = wind.getDirSignY();
+    
+        // Run the physical movement formulas using the positive wind speed
+        double totalWindAcceleration = windSpeed * WIND_ACCEL_FACTOR;
         
-        double horizontalWindForce = wind.getWindForce(); 
-        double verticalWindForce = wind.getWindForceY();
-
-        // FIXED: Preserving direction signs explicitly by multiplying the direction sign *after* the squaring operation
-        double windSignX = Math.signum(horizontalWindForce);
-        double windSignY = Math.signum(verticalWindForce);
-        
-        double absWindX = Math.abs(horizontalWindForce) * WIND_ACCEL_FACTOR;
-        double absWindY = Math.abs(verticalWindForce) * WIND_ACCEL_FACTOR;
-
-        x = (vx * flightTime) + (0.5 * absWindX * flightTime * flightTime * windSignX);
-        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime) + (0.5 * absWindY * flightTime * flightTime * windSignY); 
+        // Apply directional signs after the squaring step to avoid negative squaring errors
+        double driftX = 0.5 * totalWindAcceleration * flightTime * flightTime * signX;
+        double driftY = 0.5 * totalWindAcceleration * flightTime * flightTime * signY;
+    
+        // Apply tracking updates directly to the arrow position parameters
+        x = (vx * flightTime) + driftX;
+        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime) + driftY; 
         z = (vz * flightTime);
     }
     
