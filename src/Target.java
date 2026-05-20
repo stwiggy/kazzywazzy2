@@ -2,30 +2,67 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Target {
-    public double x = 0; 
+    public double x = 0;
     public double y = 0;
-    public static final double DISTANCE_Z = 50.0; 
-    public double radius = 8.0; 
+    public static final double DISTANCE_Z = 80.0;
+    public double radius = 120.0;
+    private double vx = 0;
+    private double vy = 0;
+    private static final double SPEED = 1.5;
+    private static final double BOUNDS = 150.0;
+    private Random random = new Random();
+    private boolean moving = false;
 
     private List<HitPoint> hits = new ArrayList<>();
-
+    
+    // Tracks hit positions relative to the moving target's center axis
     private static class HitPoint {
-        double x, y;
-        HitPoint(double x, double y) {
-            this.x = x;
-            this.y = y;
+        double relativeX, relativeY;
+        HitPoint(double relativeX, double relativeY) { 
+            this.relativeX = relativeX; 
+            this.relativeY = relativeY; 
         }
     }
 
-    public Target() {}
+    public Target() {
+        randomizeDirection();
+    }
+
+    public void randomizeDirection() {
+        double angle = random.nextDouble() * Math.PI * 2;
+        vx = Math.cos(angle) * SPEED;
+        vy = Math.sin(angle) * SPEED;
+    }
+
+    public void setMoving(boolean moving) {
+        this.moving = moving;
+        if (!moving) {
+            resetToCenter();
+        }
+    }
+
+    public void resetToCenter() {
+        this.x = 0;
+        this.y = 0;
+        this.vx = 0;
+        this.vy = 0;
+    }
+
+    public void update() {
+        if (!moving) return;
+        x += vx;
+        y += vy;
+        if (x > BOUNDS || x < -BOUNDS) { vx = -vx; randomizeDirection(); vx = Math.abs(vx) * (x > 0 ? -1 : 1); }
+        if (y > BOUNDS || y < -BOUNDS) { vy = -vy; randomizeDirection(); vy = Math.abs(vy) * (y > 0 ? -1 : 1); }
+    }
 
     public int calculateScore(double arrowX, double arrowY) {
         double dx = arrowX - x;
         double dy = arrowY - y;
         double dist = Math.sqrt(dx * dx + dy * dy);
-
         if (dist <= radius * 0.2) return 10;
         if (dist <= radius * 0.4) return 8;
         if (dist <= radius * 0.6) return 6;
@@ -34,19 +71,18 @@ public class Target {
         return 0;
     }
 
-    public void addHit(double arrowX, double arrowY) {
-        hits.add(new HitPoint(arrowX, arrowY));
+    // Stores hit position coordinates relative to target's center frame
+    public void addHit(double arrowX, double arrowY) { 
+        hits.add(new HitPoint(arrowX - x, arrowY - y)); 
     }
-
-    public void clearHits() {
-        hits.clear();
-    }
+    
+    public void clearHits() { hits.clear(); }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2 + (int)(x * perspectiveScale);
-        int cy = screenHeight / 2 - 100 + (int)(y * perspectiveScale);
+        int cy = screenHeight / 2 - 50 + (int)(y * perspectiveScale);
         int r = (int)(radius * perspectiveScale);
-
+        
         Color[] rings = {Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW};
         for (int i = rings.length - 1; i >= 0; i--) {
             int currentRadius = r * (i + 1) / rings.length;
@@ -55,11 +91,12 @@ public class Target {
             g.setColor(Color.DARK_GRAY);
             g.drawOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
         }
-
-        g.setColor(new Color(50, 255, 50)); 
+        
+        // Renders hits relative to the current position of target center coordinates
+        g.setColor(new Color(50, 255, 50));
         for (HitPoint hit : hits) {
-            int hx = screenWidth / 2 + (int)(hit.x * perspectiveScale);
-            int hy = screenHeight / 2 - 100 + (int)(hit.y * perspectiveScale);
+            int hx = screenWidth / 2 + (int)((x + hit.relativeX) * perspectiveScale);
+            int hy = screenHeight / 2 - 50 + (int)((y + hit.relativeY) * perspectiveScale);
             g.fillOval(hx - 4, hy - 4, 8, 8);
             g.setColor(Color.BLACK);
             g.drawOval(hx - 4, hy - 4, 8, 8);
