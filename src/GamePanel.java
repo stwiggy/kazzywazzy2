@@ -162,15 +162,13 @@ public class GamePanel extends JPanel implements ActionListener {
             // Level 1: Perfectly calm. No drift.
             wind.setWindForce(0); 
         } else if (currentLevel == 2) {
-            // Level 2: Moderate lateral side-winds (Left or Right drift only)
+            // Level 2: Moderate side-winds, vertical-winds, or diagonals
             wind.randomize(); 
-            // If your Wind class randomizes verticality natively, you can clamp it here if needed, 
-            // though standard horizontal drift works beautifully out of the box.
         } else {
-            // Level 3: Strong multi-directional crosswinds (Alters X-drift and subtle Y lift/drop)
+            // Level 3: Stronger multi-directional winds
             wind.randomize();
-            // Up the stakes slightly for the final level challenge
-            wind.setWindForce(wind.getWindForce() * 1.5); 
+            // FIXED: Using getSpeed() instead of the removed getWindForce()
+            wind.setWindForce(wind.getSpeed() * 1.5); 
         }
     }
 
