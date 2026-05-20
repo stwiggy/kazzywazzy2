@@ -54,7 +54,6 @@ public class GamePanel extends JPanel implements ActionListener {
         requestFocusInWindow();
         setBackground(new Color(135, 206, 235));
 
-        // Hide standard system cursor to use custom crosshair rendering
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
             cursorImg, new Point(0, 0), "blank cursor");
@@ -88,7 +87,7 @@ public class GamePanel extends JPanel implements ActionListener {
                     round = 1;
                     totalScore = 0;
                     wind.randomize();
-                    target.clearHits(); // Clear hit markers from previous run
+                    target.clearHits();
                     currentState = GameState.AIMING;
                     return;
                 }
@@ -142,9 +141,7 @@ public class GamePanel extends JPanel implements ActionListener {
         double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
         
         double targetAimX = wx - (WIDTH / 2.0);
-        
-        // Corrects coordinate translation where physical Y values point up
-        double targetAimY = (HEIGHT / 2.0 - 100.0) - wy;
+        double targetAimY = wy - (HEIGHT / 2.0 - 100.0);
         
         arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
@@ -165,19 +162,18 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
 
-            // Trigger registration when arrow reaches target's Z distance plane
             if (arrow.z >= Target.DISTANCE_Z) {
                 lastScore = target.calculateScore(arrow.x, arrow.y);
                 totalScore += lastScore;
                 
-                target.addHit(arrow.x, arrow.y); // Log persistent hit point marker location
+                // Add mark on target face
+                target.addHit(arrow.x, arrow.y);
                 
                 arrow.setStuck(true);
                 currentState = GameState.ROUND_END;
             }
             
-            // Safety break: Check if arrow dropped completely out of frame bounds
-            if (arrow.y < -400) { 
+            if (arrow.y > 800) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
             }
@@ -194,12 +190,10 @@ public class GamePanel extends JPanel implements ActionListener {
 
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
-        // Apply camera zoom modifications
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // Environment Background rendering
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -228,7 +222,6 @@ public class GamePanel extends JPanel implements ActionListener {
 
         g2d.setTransform(oldTransform);
 
-        // HUD Crosshairs and Aim overlays
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
@@ -259,55 +252,65 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        double dynamicBowX = mouseX;
+        // Fix the bow base point to the bottom-center of the panel viewport
+        double bowBaseX = WIDTH / 2.0;
+        double bowBaseY = HEIGHT - 50.0;
+        
+        // Calculate dynamic rotation angle relative to the cursor tracking coordinates
+        double angle = Math.atan2(mouseY - bowBaseY, mouseX - bowBaseX) - Math.PI / 2;
+        
+        java.awt.geom.AffineTransform initialTransform = g2d.getTransform();
+        g2d.translate(bowBaseX, bowBaseY);
+        g2d.rotate(angle);
+        
         int tensionY = (int)(chargeLevel * 15); 
-        int dynamicBowY = mouseY + 250; 
-        int bottomY = dynamicBowY + tensionY; 
+        int bottomY = tensionY; 
         
         Path2D bowPath = new Path2D.Double();
-        bowPath.moveTo(dynamicBowX - 300, bottomY - 100);
-        bowPath.quadTo(dynamicBowX, bottomY + 50, dynamicBowX + 300, bottomY - 100);
-        bowPath.quadTo(dynamicBowX, bottomY + 100, dynamicBowX - 300, bottomY - 100);
+        bowPath.moveTo(-300, bottomY - 100);
+        bowPath.quadTo(0, bottomY + 50, 300, bottomY - 100);
+        bowPath.quadTo(0, bottomY + 100, -300, bottomY - 100);
         
         GradientPaint woodPaint = new GradientPaint(
-            (float)(dynamicBowX - 300), bottomY - 100, new Color(101, 67, 33), 
-            (float)(dynamicBowX + 300), bottomY - 100, new Color(139, 69, 19)
+            -300, bottomY - 100, new Color(101, 67, 33), 
+            300, bottomY - 100, new Color(139, 69, 19)
         );
         g2d.setPaint(woodPaint);
         g2d.fill(bowPath);
         
         g2d.setColor(new Color(40, 40, 40));
-        g2d.fillRoundRect((int)dynamicBowX - 15, bottomY - 20, 30, 40, 10, 10);
+        g2d.fillRoundRect(-15, bottomY - 20, 30, 40, 10, 10);
         
         g2d.setColor(new Color(220, 220, 220, 200)); 
         g2d.setStroke(new BasicStroke(3)); 
         
         if (isDragging) {
-            g2d.drawLine((int)dynamicBowX - 290, bottomY - 90, (int)dynamicBowX, bottomY + tensionY); 
-            g2d.drawLine((int)dynamicBowX + 290, bottomY - 90, (int)dynamicBowX, bottomY + tensionY); 
+            g2d.drawLine(-290, bottomY - 90, 0, bottomY + tensionY); 
+            g2d.drawLine(290, bottomY - 90, 0, bottomY + tensionY); 
             
             g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect((int)dynamicBowX - 3, bottomY - 150 + tensionY, 6, 150);
+            g2d.fillRect(-3, bottomY - 150 + tensionY, 6, 150);
             
             g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{(int)dynamicBowX-3, (int)dynamicBowX-15, (int)dynamicBowX-3}, new int[]{bottomY-20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
-            g2d.fillPolygon(new int[]{(int)dynamicBowX+3, (int)dynamicBowX+15, (int)dynamicBowX+3}, new int[]{bottomY-20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
+            g2d.fillPolygon(new int[]{-3, -15, -3}, new int[]{bottomY - 20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
+            g2d.fillPolygon(new int[]{3, 15, 3}, new int[]{bottomY - 20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
             
             g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{(int)dynamicBowX-4, (int)dynamicBowX, (int)dynamicBowX+4}, new int[]{bottomY-150 + tensionY, bottomY-160 + tensionY, bottomY-150 + tensionY}, 3);
+            g2d.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 150 + tensionY, bottomY - 160 + tensionY, bottomY - 150 + tensionY}, 3);
         } else {
-            g2d.drawLine((int)dynamicBowX - 290, bottomY - 90, (int)dynamicBowX + 290, bottomY - 90);
+            g2d.drawLine(-290, bottomY - 90, 290, bottomY - 90);
             
             g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect((int)dynamicBowX - 3, bottomY - 100, 6, 100);
+            g2d.fillRect(-3, bottomY - 100, 6, 100);
             
             g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{(int)dynamicBowX-3, (int)dynamicBowX-15, (int)dynamicBowX-3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
-            g2d.fillPolygon(new int[]{(int)dynamicBowX+3, (int)dynamicBowX+15, (int)dynamicBowX+3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            g2d.fillPolygon(new int[]{-3, -15, -3}, new int[]{bottomY - 20, bottomY, bottomY}, 3);
+            g2d.fillPolygon(new int[]{3, 15, 3}, new int[]{bottomY - 20, bottomY, bottomY}, 3);
             
             g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{(int)dynamicBowX-4, (int)dynamicBowX, (int)dynamicBowX+4}, new int[]{bottomY-100, bottomY-110, bottomY-100}, 3);
+            g2d.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 100, bottomY - 110, bottomY - 100}, 3);
         }
+        g2d.setTransform(initialTransform);
         g2d.setStroke(new BasicStroke(1));
     }
 
