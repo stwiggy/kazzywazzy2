@@ -61,7 +61,7 @@ public class GamePanel extends JPanel implements ActionListener {
         arrow = new Arrow();
         wind = new Wind();
         configureWindForLevel();
-        target.setMoving(currentLevel == 3);
+            target.setMoving(currentLevel == 3);
 
         MouseAdapter ma = new MouseAdapter() {
             @Override
@@ -77,8 +77,9 @@ public class GamePanel extends JPanel implements ActionListener {
                     if (shotInLevel < MAX_SHOTS) {
                         shotInLevel++;
                         configureWindForLevel();
-                        target.setMoving(currentLevel == 3);
+            target.setMoving(currentLevel == 3);
                         currentState = GameState.AIMING;
+                        target.clearHits();
                         zoomLevel = 1.0;
                         chargeLevel = 0.0;
                     } else {
@@ -95,7 +96,7 @@ public class GamePanel extends JPanel implements ActionListener {
                     shotInLevel = 1;
                     target.clearHits();
                     configureWindForLevel();
-                    target.setMoving(currentLevel == 3);
+            target.setMoving(currentLevel == 3);
                     currentState = GameState.AIMING;
                     zoomLevel = 1.0;
                     chargeLevel = 0.0;
@@ -107,7 +108,7 @@ public class GamePanel extends JPanel implements ActionListener {
                     totalScore = 0;
                     target.clearHits();
                     configureWindForLevel();
-                    target.setMoving(currentLevel == 3);
+            target.setMoving(currentLevel == 3);
                     currentState = GameState.AIMING;
                     zoomLevel = 1.0;
                     chargeLevel = 0.0;
