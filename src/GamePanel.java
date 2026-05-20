@@ -54,7 +54,6 @@ public class GamePanel extends JPanel implements ActionListener {
         requestFocusInWindow();
         setBackground(new Color(135, 206, 235));
 
-        // Create a blank custom cursor to hide the default mouse pointer
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
             cursorImg, new Point(0, 0), "blank cursor");
@@ -138,24 +137,17 @@ public class GamePanel extends JPanel implements ActionListener {
     private void shootArrow() {
         currentState = GameState.ARROW_FLYING;
         
-        // Account for active camera zoom transformations when checking mouse targets
         double wx = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
         double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
         
-        // Target coordinate matching relative to center origin
         double targetAimX = wx - (WIDTH / 2.0);
         double targetAimY = wy - (HEIGHT / 2.0 - 100.0);
         
-        // Convert the visual bow base location (HEIGHT - 50) into 3D simulation coordinate space
-        // Since center origin 'cy' is at (HEIGHT / 2 - 100), the conversion is:
-        double visualBowY = (HEIGHT - 50.0) - (HEIGHT / 2.0 - 100.0);
-        
-        // Launch arrow with identical 3D coordinate frame setup
-        arrow.launch(chargeLevel, targetAimX, targetAimY, visualBowY);
+        arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        // Camera smooth zoom interpolations based on draw state
         if (currentState == GameState.AIMING && isDragging) {
             zoomLevel += (1.4 - zoomLevel) * 0.05;
             chargeLevel += A_CONSTANT * 0.016; 
@@ -170,24 +162,18 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
 
-            // Check impact when arrow crosses the target's 3D plane
-            if (arrow.z >= Target.DISTANCE_Z && !arrow.isStuck()) {
-                double dx = arrow.x - target.x;
-                double dy = arrow.y - target.y;
-                double distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance <= target.radius) {
-                    // It's a clean hit on the target face board
-                    lastScore = target.calculateScore(arrow.x, arrow.y);
-                    totalScore += lastScore;
-                    target.addHit(arrow.x, arrow.y);
-                    arrow.setStuck(true);
-                    currentState = GameState.ROUND_END;
-                }
+            if (arrow.z >= Target.DISTANCE_Z) {
+                lastScore = target.calculateScore(arrow.x, arrow.y);
+                totalScore += lastScore;
+                
+                // Add mark on target face
+                target.addHit(arrow.x, arrow.y);
+                
+                arrow.setStuck(true);
+                currentState = GameState.ROUND_END;
             }
             
-            // If the arrow missed, let it continue sailing into the distance or fall off-screen
-            if (arrow.z > Target.DISTANCE_Z * 1.5 || arrow.y > 800) {
+            if (arrow.y > 800) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
             }
@@ -202,15 +188,12 @@ public class GamePanel extends JPanel implements ActionListener {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Save default identity matrix context transformations
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
-        // Center zoom operations safely around the center of the viewport
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // --- Draw Sky background environment ---
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -218,7 +201,6 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
-        // --- Draw Ground background environment ---
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
@@ -226,24 +208,21 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(groundPaint);
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
 
-        // Establish core depth scaling factor for stable environment geometry calculations
         double cameraZ = 0; 
         double targetZDist = Target.DISTANCE_Z - cameraZ;
         double targetScale = 600.0 / targetZDist;
 
-        // Draw background scenery assets 
+        // Base environment drawing
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         wind.draw(g2d, WIDTH, HEIGHT);
 
-        // Draw flying arrow components over background assets cleanly
+        // Render traveling arrow sequence distinctly over the target background environment
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
             arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
         }
 
-        // Revert matrix tracking to restore static UI layer configurations
         g2d.setTransform(oldTransform);
 
-        // --- Draw Aiming Sight Reticle & Bow ---
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
@@ -255,7 +234,6 @@ public class GamePanel extends JPanel implements ActionListener {
             g2d.fillOval(mouseX - 2, mouseY - 2, 4, 4); 
             g2d.setStroke(new BasicStroke(1));
             
-            // Draw radial circular charge tracker
             if (isDragging) {
                 g2d.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2d.setColor(new Color(0, 0, 0, 100)); 
@@ -271,7 +249,6 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
 
-        // Overlay static UI Heads-Up Displays
         drawUI(g2d);
     }
 
