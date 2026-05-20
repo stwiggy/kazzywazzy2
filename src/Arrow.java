@@ -11,15 +11,22 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
+    private boolean isStuck = false;
     private static final double GRAVITY = 0.05; 
     private static final double WIND_EFFECT = 0.005; 
 
     public void update(Wind wind) {
+        if (isStuck) return;
+        
         x += vx;
         y += vy;
         z += vz;
         vy += GRAVITY;
         vx += wind.getForce() * WIND_EFFECT;
+    }
+    
+    public void setStuck(boolean stuck) {
+        this.isStuck = stuck;
     }
     
     public void reset() {
@@ -29,6 +36,7 @@ public class Arrow {
         vx = 0;
         vy = 0;
         vz = 0;
+        isStuck = false;
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
@@ -38,11 +46,9 @@ public class Arrow {
         int tailScreenX = cx + (int)(x * perspectiveScale);
         int tailScreenY = cy + (int)(y * perspectiveScale);
         
-        double arrowLength3D = 60.0;
+        double arrowLength3D = isStuck ? 20.0 : 60.0;
         double tipZ = z + arrowLength3D;
-        
-        // Match the target's relative depth scale calculation
-        double tipScale = 1000.0 / Math.max(1, tipZ);
+        double tipScale = 600.0 / Math.max(1, tipZ);
         
         int tipScreenX = cx + (int)(x * tipScale);
         int tipScreenY = cy + (int)(y * tipScale);
@@ -76,6 +82,11 @@ public class Arrow {
             new int[]{tailScreenY, fletchRightY, (int)(tailScreenY + (dy / len) * fletchSize)},
             3
         );
+        
+        if (isStuck) {
+            g.setColor(new Color(0, 0, 0, 150));
+            g.fillOval(tipScreenX - 3, tipScreenY - 3, 6, 6);
+        }
         
         g.setStroke(new BasicStroke(1));
     }
