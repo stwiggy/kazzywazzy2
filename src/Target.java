@@ -1,4 +1,3 @@
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
@@ -6,24 +5,22 @@ import java.util.List;
 import java.util.Random;
 
 public class Target {
-    // 3D position parameters
-    public double x = 0; // Centers around 0 in simulation space
+    // 3D positional properties
+    public double x = 0; 
     public double y = 0;
     public static final double DISTANCE_Z = 50.0; 
     public double radius = 120.0; 
 
-    // Dynamic movement state variables
     private double destX = 0;
     private double destY = 0;
-    private double speed = 3.5; // Constant movement speed in pixels/frame
+    private double speed = 3.5; 
     private boolean isMovingEnabled = false;
     private Random random = new Random();
 
-    // Hit-detection storage structures
     private List<HitPoint> hits = new ArrayList<>();
 
     private static class HitPoint {
-        double relX, relY; // Coordinates stored relative to the center of the moving target
+        double relX, relY; 
         HitPoint(double relX, double relY) {
             this.relX = relX;
             this.relY = relY;
@@ -36,32 +33,31 @@ public class Target {
 
     public void setMovementEnabled(boolean enabled) {
         this.isMovingEnabled = enabled;
-        if (enabled) {
-            pickNewDestination();
-        }
+        if (enabled) pickNewDestination();
+    }
+
+    public void resetPosition() {
+        this.x = 0;
+        this.y = 0;
     }
 
     private void pickNewDestination() {
-        // Generates reasonable bounding limits so it stays well within the visible field
+        // Keeps destinations completely aligned within the environment's boundary limits
         this.destX = -180.0 + (random.nextDouble() * 360.0);
         this.destY = -120.0 + (random.nextDouble() * 200.0);
     }
 
     public void update() {
         if (!isMovingEnabled) return;
-
-        // Calculate vector distance components to target destination
         double dx = destX - x;
         double dy = destY - y;
         double distance = Math.sqrt(dx * dx + dy * dy);
 
         if (distance <= speed) {
-            // Snap to destination and pick a new point
             x = destX;
             y = destY;
             pickNewDestination();
         } else {
-            // Move smoothly along the vector path at a fixed constant speed
             x += (dx / distance) * speed;
             y += (dy / distance) * speed;
         }
@@ -81,7 +77,7 @@ public class Target {
     }
 
     public void addHit(double arrowX, double arrowY) {
-        // Store coordinates relative to target's center so hits move with it
+        // Keeps the green arrow impact dots locked relative to the moving board center
         hits.add(new HitPoint(arrowX - x, arrowY - y));
     }
 
@@ -90,12 +86,12 @@ public class Target {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
+        // Safely converts simulation units to window space coordinates
         int cx = screenWidth / 2 + (int)(x * perspectiveScale);
         int cy = screenHeight / 2 - 100 + (int)(y * perspectiveScale);
-
         int r = (int)(radius * perspectiveScale);
 
-        // Render target ring layers
+        // Draw Target Ring Layers with exact color matching rules
         Color[] rings = {Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW};
         for (int i = rings.length - 1; i >= 0; i--) {
             int currentRadius = r * (i + 1) / rings.length;
@@ -105,8 +101,8 @@ public class Target {
             g.drawOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
         }
 
-        // Render relative hit marker indicators
-        g.setColor(new Color(50, 255, 50)); // Reverted Green impact markers
+        // Draw green impact points relative to target center position
+        g.setColor(new Color(50, 255, 50)); 
         for (HitPoint hit : hits) {
             int hx = cx + (int)(hit.relX * perspectiveScale);
             int hy = cy + (int)(hit.relY * perspectiveScale);
