@@ -23,13 +23,12 @@ public class Arrow {
     // Reverted back to taking exactly 3 parameters (no launchOriginY)
     public void launch(double drawDistance, double targetX, double targetY) {
         reset();
-
+    
         double eBow = 0.5 * K * (drawDistance * drawDistance);
         double v0 = Math.sqrt((2.0 * eBow) / M);
         
         double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
         
-        // Launching directly down the center line from (0,0,0)
         this.vx = v0 * (targetX / distanceToTarget3D);
         this.vy = v0 * (targetY / distanceToTarget3D); 
         this.vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
