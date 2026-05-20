@@ -6,13 +6,14 @@ import java.awt.BasicStroke;
 import java.awt.Stroke;
 
 public class Target {
-    // 🎯 GAME REALISM: Brought the target closer from 1400.0 to 60.0 to match the new fast flight path
-    public static final double DISTANCE_Z = 60.0;
+    // 🎯 TARGET MOVED CLOSER: Set to 30.0 units down the Z-axis
+    public static final double DISTANCE_Z = 30.0;
+    
     public double x = 0;
     public double y = 0;
     
-    // 📏 GAME REALISM: Adjusted standard size radius to scale nicely with the new 60.0 meter depth view
-    public double radius = 3.5;
+    // 📏 SCALE ADJUSTMENT: Set to 2.2 so it matches the close-range 30.0m perspective
+    public double radius = 2.2;
     
     private static final Color[] RING_COLORS = {
         Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW
@@ -20,7 +21,7 @@ public class Target {
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2;
-        int cy = screenHeight / 2; // Perfectly aligned with the true horizon center
+        int cy = screenHeight / 2; // Perfectly aligned with the central horizon line
         
         int screenX = cx + (int)(x * perspectiveScale);
         int screenY = cy + (int)(y * perspectiveScale);
