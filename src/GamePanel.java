@@ -47,19 +47,13 @@ public class GamePanel extends JPanel implements ActionListener {
     private boolean isDragging = false;
     
     private double zoomLevel = 1.0;
-    private double chargeLevel = 0.0; 
-    private static final double A_CONSTANT = 2.5; 
+    private double chargeLevel = 0.0;
+    private static final double A_CONSTANT = 2.5;
 
     public GamePanel() {
-        // FORCE-FIX: Force system rendering properties programmatically 
-        System.setProperty("sun.java2d.opengl", "false");
-        System.setProperty("sun.java2d.pmoffscreen", "false");
-        
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         requestFocusInWindow();
-        
-        // Ensure standard background fallback profile properties are set
         setBackground(new Color(135, 206, 235));
         setOpaque(true);
 
@@ -89,7 +83,7 @@ public class GamePanel extends JPanel implements ActionListener {
                         shotInLevel++;
                         configureWindForLevel();
                         currentState = GameState.AIMING;
-                        target.clearHits(); 
+                        target.clearHits();
                         zoomLevel = 1.0;
                         chargeLevel = 0.0;
                     } else {
@@ -144,14 +138,14 @@ public class GamePanel extends JPanel implements ActionListener {
             public void mouseDragged(MouseEvent e) {
                 mouseX = e.getX();
                 mouseY = e.getY();
-                repaint(); 
+                repaint();
             }
 
             @Override
             public void mouseMoved(MouseEvent e) {
                 mouseX = e.getX();
                 mouseY = e.getY();
-                repaint(); 
+                repaint();
             }
         };
 
@@ -167,12 +161,12 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void configureWindForLevel() {
         if (currentLevel == 1) {
-            wind.setWindForce(0); 
+            wind.setWindForce(0);
         } else if (currentLevel == 2) {
-            wind.randomize(); 
+            wind.randomize();
         } else {
             wind.randomize();
-            wind.setWindForce(wind.getSpeed() * 2.2); 
+            wind.setWindForce(wind.getSpeed() * 2.2);
         }
     }
 
@@ -191,9 +185,9 @@ public class GamePanel extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (currentState == GameState.AIMING && isDragging) {
-            zoomLevel += (1.4 - zoomLevel) * 0.08; 
-            chargeLevel += A_CONSTANT * 0.024;    
-            if (chargeLevel > 3.5) chargeLevel = 3.5; 
+            zoomLevel += (1.4 - zoomLevel) * 0.08;
+            chargeLevel += A_CONSTANT * 0.024;
+            if (chargeLevel > 3.5) chargeLevel = 3.5;
         } else {
             zoomLevel += (1.0 - zoomLevel) * 0.15;
             if (currentState != GameState.ARROW_FLYING && currentState != GameState.ROUND_END) {
@@ -231,64 +225,59 @@ public class GamePanel extends JPanel implements ActionListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
+        g2d.setColor(Color.WHITE); // reset macOS LAF color injection
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    
+
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
-    
+
         GradientPaint skyPaint = new GradientPaint(
-            0, -HEIGHT, new Color(30, 100, 200), 
+            0, -HEIGHT, new Color(30, 100, 200),
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
         );
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
-        g2d.setPaint(null); // reset paint state
-    
+        g2d.setColor(Color.WHITE); // force reset after gradient
+
         GradientPaint groundPaint = new GradientPaint(
-            0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
+            0, HEIGHT / 2 + 100, new Color(45, 160, 45),
             0, HEIGHT * 2, new Color(20, 80, 20)
         );
         g2d.setPaint(groundPaint);
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT);
-        g2d.setPaint(null); // reset paint state
-    
+        g2d.setColor(Color.WHITE); // force reset after gradient
+
         double targetScale = 600.0 / Target.DISTANCE_Z;
-        System.out.println("Paint class: " + g2d.getPaint().getClass().getName());
-        System.out.println("Color: " + g2d.getColor());
-        Graphics2D g2dTarget = (Graphics2D) g2d.create();
-        g2dTarget.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        target.draw(g2dTarget, WIDTH, HEIGHT, targetScale);
-        g2dTarget.dispose();
+        target.draw(g2d, WIDTH, HEIGHT, targetScale);
         
         if (currentLevel > 1) {
-            Graphics2D g2dWind = (Graphics2D) g2d.create();
-            wind.draw(g2dWind, WIDTH, HEIGHT);
-            g2dWind.dispose();
+            wind.draw(g2d, WIDTH, HEIGHT);
         }
-    
+
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
             arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
         }
-    
+
         g2d.setTransform(oldTransform);
-    
+        g2d.setColor(Color.WHITE); // force reset after transform restore
+
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
-            g2d.setColor(new Color(0, 255, 0, 180)); 
+            g2d.setColor(new Color(0, 255, 0, 180));
             g2d.setStroke(new BasicStroke(2));
             g2d.drawOval(mouseX - 15, mouseY - 15, 30, 30);
             g2d.drawLine(mouseX - 25, mouseY, mouseX - 5, mouseY);
             g2d.drawLine(mouseX + 5, mouseY, mouseX + 25, mouseY);
-            g2d.fillOval(mouseX - 2, mouseY - 2, 4, 4); 
+            g2d.fillOval(mouseX - 2, mouseY - 2, 4, 4);
             g2d.setStroke(new BasicStroke(1));
             
             if (isDragging) {
                 g2d.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g2d.setColor(new Color(0, 0, 0, 100)); 
+                g2d.setColor(new Color(0, 0, 0, 100));
                 g2d.drawOval(mouseX - 40, mouseY - 40, 80, 80);
                 
                 double maxCap = 3.5;
@@ -300,10 +289,10 @@ public class GamePanel extends JPanel implements ActionListener {
                 g2d.setStroke(new BasicStroke(1));
             }
         }
-    
+
         drawUI(g2d);
     }
-    
+
     private void drawBow(Graphics2D g2d) {
         double bowBaseX = WIDTH / 2.0;
         double bowBaseY = HEIGHT - 50.0;
@@ -314,8 +303,8 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.translate(bowBaseX, bowBaseY);
         g2d.rotate(angle);
         
-        int tensionY = (int)(chargeLevel * 15); 
-        int bottomY = tensionY; 
+        int tensionY = (int)(chargeLevel * 15);
+        int bottomY = tensionY;
         
         Path2D bowPath = new Path2D.Double();
         bowPath.moveTo(-300, bottomY - 100);
@@ -323,22 +312,22 @@ public class GamePanel extends JPanel implements ActionListener {
         bowPath.quadTo(0, bottomY + 100, -300, bottomY - 100);
         
         GradientPaint woodPaint = new GradientPaint(
-            -300, bottomY - 100, new Color(101, 67, 33), 
+            -300, bottomY - 100, new Color(101, 67, 33),
             300, bottomY - 100, new Color(139, 69, 19)
         );
         g2d.setPaint(woodPaint);
         g2d.fill(bowPath);
-        g2d.setPaint(null); // reset paint state
+        g2d.setColor(Color.WHITE); // force reset after gradient
         
         g2d.setColor(new Color(40, 40, 40));
         g2d.fillRoundRect(-15, bottomY - 20, 30, 40, 10, 10);
         
-        g2d.setColor(new Color(220, 220, 220, 200)); 
-        g2d.setStroke(new BasicStroke(3)); 
+        g2d.setColor(new Color(220, 220, 220, 200));
+        g2d.setStroke(new BasicStroke(3));
         
         if (isDragging) {
-            g2d.drawLine(-290, bottomY - 90, 0, bottomY + tensionY); 
-            g2d.drawLine(290, bottomY - 90, 0, bottomY + tensionY); 
+            g2d.drawLine(-290, bottomY - 90, 0, bottomY + tensionY);
+            g2d.drawLine(290, bottomY - 90, 0, bottomY + tensionY);
             
             g2d.setColor(new Color(50, 50, 50));
             g2d.fillRect(-3, bottomY - 150 + tensionY, 6, 150);
@@ -365,24 +354,23 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setTransform(initialTransform);
         g2d.setStroke(new BasicStroke(1));
     }
+
     private void drawUI(Graphics2D g2d) {
         g2d.setColor(new Color(0, 0, 0, 120));
         g2d.fillRoundRect(10, 10, 240, 105, 15, 15);
-    
+
         g2d.setFont(new Font("SansSerif", Font.BOLD, 22));
-        
-        // Shadow (drawn first, offset by +2,+2)
+
         g2d.setColor(new Color(0, 0, 0, 180));
         g2d.drawString("Level: " + currentLevel + " / " + MAX_LEVELS, 22, 37);
         g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 22, 67);
         g2d.drawString("Total Score: " + totalScore, 22, 97);
-    
-        // White text on top
+
         g2d.setColor(Color.WHITE);
         g2d.drawString("Level: " + currentLevel + " / " + MAX_LEVELS, 20, 35);
         g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 20, 65);
         g2d.drawString("Total Score: " + totalScore, 20, 95);
-    
+
         if (currentState == GameState.START_SCREEN) {
             drawCenterText(g2d, "Level 1: Calm Breezes - Click to start!");
         } else if (currentState == GameState.ROUND_END) {
