@@ -40,6 +40,7 @@ public class Arrow {
         flightTime += 0.016; 
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
+        // Reverted completely back to your original cumulative kinematic formulas
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
@@ -57,7 +58,7 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // 🚫 DON'T SHOW DURING FLIGHT: If it hasn't hit yet, skip drawing completely
+        // Hidden during flight processing
         if (!isStuck) {
             return;
         }
@@ -65,18 +66,14 @@ public class Arrow {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
         
-        // Calculate the exact impact point scaled to the perspective
         int tipScreenX = cx + (int)(x * perspectiveScale);
         int tipScreenY = cy + (int)(y * perspectiveScale);
         
-        // 🎯 DRAW IMPACT MARK: A bold, distinct cross/dot where the arrow pinned the target
         int markerSize = Math.max(4, (int)(8 * perspectiveScale));
         
-        // Draw a small dark shadow backing
         g.setColor(new Color(0, 0, 0, 150));
         g.fillOval(tipScreenX - markerSize / 2, tipScreenY - markerSize / 2, markerSize, markerSize);
         
-        // Draw a bright inner core entry hole indicator
         g.setColor(new Color(230, 30, 30)); 
         g.fillOval(tipScreenX - markerSize / 4, tipScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
     }
