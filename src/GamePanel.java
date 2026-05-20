@@ -63,11 +63,16 @@ public class GamePanel extends JPanel implements ActionListener {
         wind = new Wind();
 
         // Setup mouse listeners for aiming
+        // Setup mouse listeners for aiming
         MouseAdapter ma = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (currentState == GameState.START_SCREEN) {
                     currentState = GameState.AIMING;
+                    // Initialize the drag immediately on start click!
+                    isDragging = true;
+                    mouseX = e.getX();
+                    mouseY = e.getY();
                     return;
                 }
                 if (currentState == GameState.ROUND_END) {
@@ -109,12 +114,14 @@ public class GamePanel extends JPanel implements ActionListener {
             public void mouseDragged(MouseEvent e) {
                 mouseX = e.getX();
                 mouseY = e.getY();
+                repaint(); // Force immediate updates to screen matrix
             }
 
             @Override
             public void mouseMoved(MouseEvent e) {
                 mouseX = e.getX();
                 mouseY = e.getY();
+                repaint(); // Force immediate updates to screen matrix
             }
         };
 
