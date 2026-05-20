@@ -18,13 +18,11 @@ public class Target {
 
     private List<HitPoint> hits = new ArrayList<>();
     private static class HitPoint {
-        double x, y;
-        HitPoint(double x, double y) { this.x = x; this.y = y; }
+        double relX, relY; // relative to target center
+        HitPoint(double relX, double relY) { this.relX = relX; this.relY = relY; }
     }
 
-    public Target() {
-        randomizeDirection();
-    }
+    public Target() { randomizeDirection(); }
 
     private void randomizeDirection() {
         double angle = random.nextDouble() * Math.PI * 2;
@@ -32,9 +30,7 @@ public class Target {
         vy = Math.sin(angle) * SPEED;
     }
 
-    public void setMoving(boolean moving) {
-        this.moving = moving;
-    }
+    public void setMoving(boolean moving) { this.moving = moving; }
 
     public void update() {
         if (!moving) return;
@@ -56,14 +52,22 @@ public class Target {
         return 0;
     }
 
-    public void addHit(double arrowX, double arrowY) { hits.add(new HitPoint(arrowX, arrowY)); }
-    public void clearHits() { hits.clear(); }
+    public void addHit(double arrowX, double arrowY) {
+        // store hit position relative to target center
+        hits.add(new HitPoint(arrowX - x, arrowY - y));
+    }
+
+    public void clearHits() {
+        hits.clear();
+        x = 0;
+        y = 0;
+    }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2 + (int)(x * perspectiveScale);
         int cy = screenHeight / 2 - 50 + (int)(y * perspectiveScale);
         int r = (int)(radius * perspectiveScale);
-        Color[] rings = {Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW};
+        Color[] rings = {Color.YELLOW, Color.RED, Color.BLUE, Color.BLACK, Color.WHITE};
         for (int i = rings.length - 1; i >= 0; i--) {
             int currentRadius = r * (i + 1) / rings.length;
             g.setColor(rings[i]);
@@ -73,8 +77,9 @@ public class Target {
         }
         g.setColor(new Color(50, 255, 50));
         for (HitPoint hit : hits) {
-            int hx = screenWidth / 2 + (int)(hit.x * perspectiveScale);
-            int hy = screenHeight / 2 - 50 + (int)(hit.y * perspectiveScale);
+            // draw hit relative to current target center
+            int hx = screenWidth / 2 + (int)((x + hit.relX) * perspectiveScale);
+            int hy = screenHeight / 2 - 50 + (int)((y + hit.relY) * perspectiveScale);
             g.fillOval(hx - 4, hy - 4, 8, 8);
             g.setColor(Color.BLACK);
             g.drawOval(hx - 4, hy - 4, 8, 8);
