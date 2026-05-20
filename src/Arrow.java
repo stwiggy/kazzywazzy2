@@ -12,20 +12,20 @@ public class Arrow {
     public double vz = 0;
     
     // Physics constants
-    private static final double GRAVITY = 0.0; // Set to 0 so the arrow flies straight
-    private static final double WIND_EFFECT = 0.1;
+    private static final double GRAVITY = 0.05; // Added subtle gravity drop for depth realism
+    private static final double WIND_EFFECT = 0.005; // Balanced scaling for 60 FPS updates
 
     public void update(Wind wind) {
-        // Apply velocities
+        // Apply physics velocities
         x += vx;
         y += vy;
         z += vz;
         
-        // Apply gravity
+        // Apply constant gravity drop over flight duration
         vy += GRAVITY;
         
-        // Apply wind (pushes horizontally)
-        vx += wind.getWindForce() * WIND_EFFECT;
+        // Smoothly apply wind push across time frames
+        vx += wind.getForce() * WIND_EFFECT;
     }
     
     public void reset() {
@@ -56,35 +56,4 @@ public class Arrow {
         
         // Draw the shaft
         g.setColor(new Color(200, 200, 200)); // Silver/carbon fiber arrow shaft
-        g.setStroke(new BasicStroke(Math.max(2, (int)(5 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.drawLine(tailScreenX, tailScreenY, tipScreenX, tipScreenY);
-        
-        // Draw fletchings (more realistic polygons)
-        int fletchSize = Math.max(3, (int)(15 * perspectiveScale));
-        g.setColor(new Color(200, 50, 50, 200)); // Translucent red
-        
-        // Offset a bit from the very back
-        int fletchStartX = tailScreenX + (tipScreenX - tailScreenX) / 10;
-        int fletchStartY = tailScreenY + (tipScreenY - tailScreenY) / 10;
-        
-        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX - fletchSize}, 
-                      new int[]{fletchStartY, tailScreenY, tailScreenY - fletchSize}, 3);
-        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX + fletchSize}, 
-                      new int[]{fletchStartY, tailScreenY, tailScreenY - fletchSize}, 3);
-        g.fillPolygon(new int[]{fletchStartX, tailScreenX, tailScreenX}, 
-                      new int[]{fletchStartY, tailScreenY, tailScreenY + fletchSize}, 3);
-
-        // Arrowhead (if tip is visible, draw a small point)
-        int headSize = Math.max(2, (int)(8 * tipScale));
-        g.setColor(Color.DARK_GRAY);
-        g.fillPolygon(new int[]{tipScreenX, tipScreenX - headSize, tipScreenX + headSize}, 
-                      new int[]{tipScreenY + headSize, tipScreenY - headSize, tipScreenY - headSize}, 3);
-
-        // Nock
-        g.setColor(Color.WHITE);
-        int nockSize = Math.max(3, (int)(6 * perspectiveScale));
-        g.fillOval(tailScreenX - nockSize/2, tailScreenY - nockSize/2, nockSize, nockSize);
-        
-        g.setStroke(new BasicStroke(1));
-    }
-}
+        g.setStroke(new BasicStroke(Math.max(2, (int)(5 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.
