@@ -5,9 +5,9 @@ import java.awt.Graphics2D;
 import java.util.Random;
 
 public class Wind {
-    private double speed;        // ALWAYS positive magnitude (0.0 to 10.0)
-    private double dirSignX;     // Direction on X axis: -1.0 (Left), 0.0 (None), 1.0 (Right)
-    private double dirSignY;     // Direction on Y axis: -1.0 (Up),   0.0 (None), 1.0 (Down)
+    private double speed;        
+    private double dirSignX;     
+    private double dirSignY;     
     
     private Random random;
 
@@ -16,25 +16,17 @@ public class Wind {
         randomize();
     }
 
-    // Replace the randomize() method inside your Wind.java with this heavier weather version:
-
     public void randomize() {
-        // FIXED: Increased base speed minimum to 6.0 and max potential to 16.0 m/s
         this.speed = 6.0 + (random.nextDouble() * 10.0);
-        
-        // Pick a random style of wind: 0 = Horizontal, 1 = Vertical, 2 = Diagonal
         int windType = random.nextInt(3);
         
         if (windType == 0) {
-            // Horizontal Only (Left or Right)
             this.dirSignX = random.nextBoolean() ? 1.0 : -1.0;
             this.dirSignY = 0.0;
         } else if (windType == 1) {
-            // Vertical Only (Up or Down)
             this.dirSignX = 0.0;
             this.dirSignY = random.nextBoolean() ? 1.0 : -1.0;
         } else {
-            // Diagonal (Combines both X and Y vectors)
             this.dirSignX = random.nextBoolean() ? 1.0 : -1.0;
             this.dirSignY = random.nextBoolean() ? 1.0 : -1.0;
         }
@@ -46,7 +38,7 @@ public class Wind {
             this.dirSignX = 0.0;
             this.dirSignY = 0.0;
         } else {
-            this.speed = Math.abs(force); // Enforce positive speed rule
+            this.speed = Math.abs(force);
         }
     }
 
@@ -70,16 +62,13 @@ public class Wind {
         int uiX = screenWidth - 140;
         int uiY = 45;
 
-        // Draw Background container card
         g.setColor(new Color(0, 0, 0, 120));
         g.fillRoundRect(uiX - 10, uiY - 25, 135, 60, 15, 15);
 
-        // Display strictly positive text string
         g.setFont(new Font("SansSerif", Font.BOLD, 14));
         g.setColor(Color.WHITE);
-        g.drawString(String.format("Wind: %.1f m/s", speed), uiX, uiY - 5);
+        g.drawString("Wind: " + String.format("%.1f", speed) + " m/s", uiX, uiY - 5);
 
-        // Draw the directional arrow pointer
         int cx = uiX + 55;
         int cy = uiY + 18;
         int len = 12;
@@ -87,16 +76,13 @@ public class Wind {
         g.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(Color.CYAN);
 
-        // Calculate line endpoints using our structural position signs
         int endX = cx + (int)(dirSignX * len);
         int endY = cy + (int)(dirSignY * len);
         int startX = cx - (int)(dirSignX * len);
         int startY = cy - (int)(dirSignY * len);
 
-        // Draw basic layout stem line
         g.drawLine(startX, startY, endX, endY);
 
-        // Draw dynamic arrowhead pointers relative to target direction angles
         double angle = Math.atan2(endY - startY, endX - startX);
         int arrowLength = 6;
         g.drawLine(endX, endY, (int)(endX - arrowLength * Math.cos(angle - 0.5)), (int)(endY - arrowLength * Math.sin(angle - 0.5)));
