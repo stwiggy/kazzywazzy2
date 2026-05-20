@@ -85,8 +85,11 @@ public class GamePanel extends JPanel implements ActionListener {
                         shotInLevel++;
                         configureWindForLevel();
                         currentState = GameState.AIMING;
-                        // Clear previous green mark ONLY when beginning the next active shot
                         target.clearHits(); 
+                        
+                        // FIXED: Force zoom and charge variables back to default values
+                        zoomLevel = 1.0;
+                        chargeLevel = 0.0;
                     } else {
                         if (currentLevel < MAX_LEVELS) {
                             currentState = GameState.LEVEL_COMPLETE;
@@ -99,9 +102,13 @@ public class GamePanel extends JPanel implements ActionListener {
                 if (currentState == GameState.LEVEL_COMPLETE) {
                     currentLevel++;
                     shotInLevel = 1;
-                    target.clearHits(); // Clear board for the new level environment
+                    target.clearHits(); 
                     configureWindForLevel();
                     currentState = GameState.AIMING;
+                    
+                    // FIXED: Reset layout multipliers for the new level
+                    zoomLevel = 1.0;
+                    chargeLevel = 0.0;
                     return;
                 }
                 if (currentState == GameState.GAME_OVER) {
@@ -111,16 +118,20 @@ public class GamePanel extends JPanel implements ActionListener {
                     target.clearHits();
                     configureWindForLevel();
                     currentState = GameState.AIMING;
+                    
+                    // FIXED: Reset layout multipliers for a fresh game
+                    zoomLevel = 1.0;
+                    chargeLevel = 0.0;
                     return;
                 }
-
+        
                 if (currentState == GameState.AIMING) {
                     isDragging = true;
                     mouseX = e.getX();
                     mouseY = e.getY();
                 }
             }
-
+        
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (currentState == GameState.AIMING && isDragging) {
