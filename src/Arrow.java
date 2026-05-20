@@ -11,7 +11,6 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    // Fast flight settings from your updates
     private static final double K = 450.0;       
     private static final double M = 0.02;       
     private static final double G = 9.8;        
@@ -20,10 +19,9 @@ public class Arrow {
     private double flightTime = 0;              
     private boolean isStuck = false;
 
-    // Reverted back to taking exactly 3 parameters (no launchOriginY)
     public void launch(double drawDistance, double targetX, double targetY) {
         reset();
-    
+
         double eBow = 0.5 * K * (drawDistance * drawDistance);
         double v0 = Math.sqrt((2.0 * eBow) / M);
         
@@ -37,11 +35,21 @@ public class Arrow {
     public void update(Wind wind) {
         if (isStuck) return;
         
-        flightTime += 0.016; 
-        double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
+        // Increased time step per frame (from 0.016 to 0.026) to make the arrow travel faster
+        flightTime += 0.026; 
+        
+        double horizontalWindForce = wind.getWindForce(); 
+        double verticalWindForce = wind.getWindForceY();
 
-        x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
-        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
+        // FIXED: Preserving direction signs explicitly by multiplying the direction sign *after* the squaring operation
+        double windSignX = Math.signum(horizontalWindForce);
+        double windSignY = Math.signum(verticalWindForce);
+        
+        double absWindX = Math.abs(horizontalWindForce) * WIND_ACCEL_FACTOR;
+        double absWindY = Math.abs(verticalWindForce) * WIND_ACCEL_FACTOR;
+
+        x = (vx * flightTime) + (0.5 * absWindX * flightTime * flightTime * windSignX);
+        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime) + (0.5 * absWindY * flightTime * flightTime * windSignY); 
         z = (vz * flightTime);
     }
     
@@ -66,26 +74,21 @@ public class Arrow {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
 
-        // Calculate screen projection based on the target plane perspective scale
         int screenX = cx + (int)(x * perspectiveScale);
         int screenY = cy + (int)(y * perspectiveScale);
 
-        // Scale the arrow's visual length down as it gets closer to the target distance
         int arrowLength = Math.max(10, (int)(80 * (1.0 - (z / Target.DISTANCE_Z))));
         int thick = Math.max(1, (int)(4 * (1.0 - (z / Target.DISTANCE_Z))));
 
-        // 1. Draw Arrow Shaft
         g.setStroke(new BasicStroke(thick, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g.setColor(new Color(139, 69, 19)); // Wood brown
+        g.setColor(new Color(139, 69, 19)); 
         g.drawLine(screenX, screenY, screenX, screenY + arrowLength);
 
-        // 2. Draw Fletching / Feathers
         g.setStroke(new BasicStroke(thick + 2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
         g.setColor(Color.WHITE); 
         g.drawLine(screenX - thick, screenY + arrowLength, screenX - thick - 4, screenY + arrowLength - 8);
         g.drawLine(screenX + thick, screenY + arrowLength, screenX + thick + 4, screenY + arrowLength - 8);
 
-        // 3. Draw Arrow Tip Nock
         g.setColor(Color.DARK_GRAY);
         g.fillOval(screenX - thick, screenY - thick, thick * 2, thick * 2);
 
