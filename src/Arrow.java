@@ -7,7 +7,6 @@ public class Arrow {
     public double y = 0;
     public double z = 0;
 
-    // Made public again so old GamePanel code can access them directly
     public double vx = 0;
     public double vy = 0;
     public double vz = 0;
@@ -15,7 +14,9 @@ public class Arrow {
     private static final double K = 150.0;       
     private static final double M = 0.05;       
     private static final double G = 9.8;        
-    private static final double WIND_ACCEL_FACTOR = 0.5; 
+    
+    // 💨 WIND ADJUSTMENT FACTOR: Set to 2.5 so the wind pushes the arrow visibly sideways
+    private static final double WIND_ACCEL_FACTOR = 2.5; 
 
     private double flightTime = 0;              
     private boolean isStuck = false;
@@ -39,8 +40,11 @@ public class Arrow {
         if (isStuck) return;
         
         flightTime += 0.016; 
+        
+        // 1. Grab the real-time calculated horizontal force from your Wind component
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
+        // 2. Physics displacement logic: x = (v0 * t) + (0.5 * a * t^2)
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
