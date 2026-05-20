@@ -14,11 +14,12 @@ public class Arrow {
     private double vz = 0;
     
     // Physics Constants derived from your formulas
-    private static final double K = 12.0;       // Bow string constant (k)
+    // ⚡ ADJUSTED: Increased K from 12.0 to 150.0 so the arrow launches with realistic speed
+    private static final double K = 150.0;       // Bow string constant (k)
     private static final double M = 0.05;       // Weight of arrow in kg (m)
     private static final double G = 9.8;        // Gravity constant (g)
     
-    // 🔴 PHYSICS UPDATE: Wind scaling factor converting m/s force to m/s^2 acceleration
+    // PHYSICS UPDATE: Wind scaling factor converting m/s force to m/s^2 acceleration
     private static final double WIND_ACCEL_FACTOR = 0.5; 
 
     private double flightTime = 0;              // Elapsed time 't' since release
@@ -53,7 +54,7 @@ public class Arrow {
         // Advance flight time 't' (scaled for frame-rate step conversion)
         flightTime += 0.016; 
 
-        // 🔴 PHYSICS UPDATE: Calculate constant acceleration from crosswind: a = force * factor
+        // PHYSICS UPDATE: Calculate constant acceleration from crosswind: a = force * factor
         double aWind = wind.getForce() * WIND_ACCEL_FACTOR;
 
         // Apply your kinematic equations perfectly integrated with wind acceleration:
