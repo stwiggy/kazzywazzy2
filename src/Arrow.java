@@ -11,8 +11,9 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    private static final double K = 150.0;       
-    private static final double M = 0.05;       
+    // ⚡ MODIFIED: Increased string tension and lowered mass for faster velocity profiles
+    private static final double K = 450.0;       
+    private static final double M = 0.02;       
     private static final double G = 9.8;        
     private static final double WIND_ACCEL_FACTOR = 0.5; 
 
@@ -25,7 +26,6 @@ public class Arrow {
         double eBow = 0.5 * K * (drawDistance * drawDistance);
         double v0 = Math.sqrt((2.0 * eBow) / M);
         
-        // Normalized vector approach guarantees the arrow travels directly towards the crosshair coordinates
         double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
         
         this.vx = v0 * (targetX / distanceToTarget3D);
@@ -39,7 +39,6 @@ public class Arrow {
         flightTime += 0.016; 
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
-        // Your initial exact cumulative trajectory position calculations
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
@@ -57,6 +56,6 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // Handled cleanly inside Target rendering pipeline now to completely stop sliding artifacts
+        // Markers are rendered directly via Target center tracking for consistency
     }
 }
