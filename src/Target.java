@@ -6,11 +6,11 @@ import java.awt.BasicStroke;
 import java.awt.Stroke;
 
 public class Target {
-    public static final double DISTANCE_Z = 1400.0;
+    public static final double DISTANCE_Z = 1200.0;
     public double x = 0;
     public double y = 0;
     
-    public double radius = 115.0;
+    public double radius = 95.0;
     
     private static final Color[] RING_COLORS = {
         Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW
