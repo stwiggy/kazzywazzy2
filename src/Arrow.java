@@ -17,7 +17,9 @@ public class Arrow {
     private static final double K = 12.0;       // Bow string constant (k)
     private static final double M = 0.05;       // Weight of arrow in kg (m)
     private static final double G = 9.8;        // Gravity constant (g)
-    private static final double WIND_EFFECT = 0.08;
+    
+    // 🔴 PHYSICS UPDATE: Wind scaling factor converting m/s force to m/s^2 acceleration
+    private static final double WIND_ACCEL_FACTOR = 0.5; 
 
     private double flightTime = 0;              // Elapsed time 't' since release
     private boolean isStuck = false;
@@ -32,7 +34,6 @@ public class Arrow {
         double v0 = Math.sqrt((2.0 * eBow) / M);
 
         // 3. Determine launch angles phi and theta based on target aiming point from center
-        // In our viewport, depth to target is Target.DISTANCE_Z
         double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
         
         // phi: vertical elevation angle
@@ -41,7 +42,6 @@ public class Arrow {
         double theta = Math.atan2(targetX, Target.DISTANCE_Z);
 
         // 4. Deconstruct into vector trajectories based on your spherical coordinate formulas
-        // Adjusted axes to fit project canvas orientation (Z is deep, Y is altitude)
         this.vx = v0 * Math.cos(phi) * Math.sin(theta);
         this.vy = v0 * Math.sin(phi); 
         this.vz = v0 * Math.cos(phi) * Math.cos(theta);
@@ -53,11 +53,15 @@ public class Arrow {
         // Advance flight time 't' (scaled for frame-rate step conversion)
         flightTime += 0.016; 
 
-        // Apply your kinematic equations:
-        // x = vx * t
-        // y = vy * t - 0.5 * g * t^2  (Note: we add wind acceleration directly to X trajectory)
-        x = (vx * flightTime) + (wind.getForce() * WIND_EFFECT * flightTime);
-        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); // '+' because down is positive in Java 2D layouts
+        // 🔴 PHYSICS UPDATE: Calculate constant acceleration from crosswind: a = force * factor
+        double aWind = wind.getForce() * WIND_ACCEL_FACTOR;
+
+        // Apply your kinematic equations perfectly integrated with wind acceleration:
+        // x = vx * t + 0.5 * a_wind * t^2
+        // y = vy * t + 0.5 * g * t^2 (Java 2D coordinate system layout: down is positive)
+        // z = vz * t
+        x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
+        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
     }
     
