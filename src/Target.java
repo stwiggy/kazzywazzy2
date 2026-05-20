@@ -7,7 +7,7 @@ public class Target {
     public double x = 0; 
     public double y = 0;
     public static final double DISTANCE_Z = 50.0; 
-    public double radius = 120.0; 
+    public double radius = 8.0; 
 
     private List<HitPoint> hits = new ArrayList<>();
 
