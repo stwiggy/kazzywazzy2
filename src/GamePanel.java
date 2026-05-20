@@ -159,6 +159,7 @@ public class GamePanel extends JPanel implements ActionListener {
         }
 
         if (currentState == GameState.ARROW_FLYING) {
+            // 💨 WIND INTEGRATION: Actively updates the arrow movement with wind data
             arrow.update(wind);
 
             if (arrow.z >= Target.DISTANCE_Z) {
@@ -249,12 +250,11 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        // 🔒 ANCHORED POSITION: Center is locked to the bottom-middle of the screen
+        // 🔒 FIXED CENTER ANCHOR: The bow's default coordinate stays in the center-bottom
         double anchorX = WIDTH / 2.0;
-        int dynamicBowY = HEIGHT - 100; // Stays at the bottom of the window
+        int dynamicBowY = HEIGHT - 100; 
         
-        // 🎯 CURSOR TRACKING: Calculate a subtle shift factor based on mouse movement
-        // This tilts/leans the bow toward the cursor without letting it detach from the center
+        // 🏹 CURSOR INFLUENCE: Calculated tilt vector based on mouse X coordinate offset
         double shiftX = (mouseX - anchorX) * 0.15; 
         double dynamicBowX = anchorX + shiftX;
         
