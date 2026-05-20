@@ -7,8 +7,7 @@ public class Target {
     public double x = 0; 
     public double y = 0;
     public static final double DISTANCE_Z = 50.0; 
-    // Calibrated radius to leave plenty of room for the sky and grass backgrounds
-    public double radius = 15.0; 
+    public double radius = 120.0; 
 
     private List<HitPoint> hits = new ArrayList<>();
 
@@ -44,26 +43,23 @@ public class Target {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // Adjusted positioning variables to place the target perfectly above the ground horizon
         int cx = screenWidth / 2 + (int)(x * perspectiveScale);
-        int cy = screenHeight / 2 - 30 + (int)(y * perspectiveScale); 
+        int cy = screenHeight / 2 - 100 + (int)(y * perspectiveScale);
         int r = (int)(radius * perspectiveScale);
 
-        // Correct color ordering loop (White outer ring down to Yellow center)
         Color[] rings = {Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW};
-        for (int i = 0; i < rings.length; i++) {
-            int currentRadius = r * (rings.length - i) / rings.length;
+        for (int i = rings.length - 1; i >= 0; i--) {
+            int currentRadius = r * (i + 1) / rings.length;
             g.setColor(rings[i]);
             g.fillOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
             g.setColor(Color.DARK_GRAY);
             g.drawOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
         }
 
-        // Draw hit point indicators
         g.setColor(new Color(50, 255, 50)); 
         for (HitPoint hit : hits) {
             int hx = screenWidth / 2 + (int)(hit.x * perspectiveScale);
-            int hy = screenHeight / 2 - 30 + (int)(hit.y * perspectiveScale);
+            int hy = screenHeight / 2 - 100 + (int)(hit.y * perspectiveScale);
             g.fillOval(hx - 4, hy - 4, 8, 8);
             g.setColor(Color.BLACK);
             g.drawOval(hx - 4, hy - 4, 8, 8);
