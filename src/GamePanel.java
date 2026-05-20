@@ -232,40 +232,42 @@ public class GamePanel extends JPanel implements ActionListener {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
+    
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
-
+    
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
         );
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
-
+        g2d.setPaint(null); // reset paint state
+    
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
         );
         g2d.setPaint(groundPaint);
-        g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
-
+        g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT);
+        g2d.setPaint(null); // reset paint state
+    
         double targetScale = 600.0 / Target.DISTANCE_Z;
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         
         if (currentLevel > 1) {
             wind.draw(g2d, WIDTH, HEIGHT);
         }
-
+    
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
             arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
         }
-
+    
         g2d.setTransform(oldTransform);
-
+    
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
@@ -291,10 +293,10 @@ public class GamePanel extends JPanel implements ActionListener {
                 g2d.setStroke(new BasicStroke(1));
             }
         }
-
+    
         drawUI(g2d);
     }
-
+    
     private void drawBow(Graphics2D g2d) {
         double bowBaseX = WIDTH / 2.0;
         double bowBaseY = HEIGHT - 50.0;
@@ -319,6 +321,7 @@ public class GamePanel extends JPanel implements ActionListener {
         );
         g2d.setPaint(woodPaint);
         g2d.fill(bowPath);
+        g2d.setPaint(null); // reset paint state
         
         g2d.setColor(new Color(40, 40, 40));
         g2d.fillRoundRect(-15, bottomY - 20, 30, 40, 10, 10);
@@ -355,7 +358,6 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setTransform(initialTransform);
         g2d.setStroke(new BasicStroke(1));
     }
-
     private void drawUI(Graphics2D g2d) {
         g2d.setColor(new Color(0, 0, 0, 120));
         g2d.fillRoundRect(10, 10, 240, 105, 15, 15);
