@@ -256,6 +256,8 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(null); // reset paint state
     
         double targetScale = 600.0 / Target.DISTANCE_Z;
+        System.out.println("Paint class: " + g2d.getPaint().getClass().getName());
+        System.out.println("Color: " + g2d.getColor());
         Graphics2D g2dTarget = (Graphics2D) g2d.create();
         g2dTarget.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         target.draw(g2dTarget, WIDTH, HEIGHT, targetScale);
