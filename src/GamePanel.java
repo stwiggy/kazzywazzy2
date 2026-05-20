@@ -138,16 +138,21 @@ public class GamePanel extends JPanel implements ActionListener {
     private void shootArrow() {
         currentState = GameState.ARROW_FLYING;
         
-        // Account for any active camera zoom modifications when determining raw aiming vector
+        // Account for active camera zoom transformations when checking mouse targets
         double wx = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
         double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
         
+        // Target coordinate matching relative to center origin
         double targetAimX = wx - (WIDTH / 2.0);
         double targetAimY = wy - (HEIGHT / 2.0 - 100.0);
         
-        arrow.launch(chargeLevel, targetAimX, targetAimY);
+        // Convert the visual bow base location (HEIGHT - 50) into 3D simulation coordinate space
+        // Since center origin 'cy' is at (HEIGHT / 2 - 100), the conversion is:
+        double visualBowY = (HEIGHT - 50.0) - (HEIGHT / 2.0 - 100.0);
+        
+        // Launch arrow with identical 3D coordinate frame setup
+        arrow.launch(chargeLevel, targetAimX, targetAimY, visualBowY);
     }
-
     @Override
     public void actionPerformed(ActionEvent e) {
         // Camera smooth zoom interpolations based on draw state
