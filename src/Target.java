@@ -102,6 +102,7 @@ public class Target {
     }
     
     public int calculateScore(double impactX, double impactY) {
+        // Keeps collision math 100% in sync with visual coordinates
         double dx = impactX - x;
         double dy = impactY - y;
         double distance = Math.sqrt(dx * dx + dy * dy);
