@@ -157,9 +157,10 @@ public class GamePanel extends JPanel implements ActionListener {
             wind.setWindForce(0);
         } else if (currentLevel == 2) {
             wind.randomize();
+            wind.setWindForce(10.0 + Math.random() * 15.0);
         } else {
             wind.randomize();
-            wind.setWindForce(wind.getSpeed() * 2.2);
+            wind.setWindForce(20.0 + Math.random() * 15.0);
         }
     }
 
@@ -177,7 +178,7 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.AIMING && isDragging) {
             zoomLevel += (1.2 - zoomLevel) * 0.08;
             chargeLevel += A_CONSTANT * 0.024;
-            if (chargeLevel > 2.5) chargeLevel = 2.5;
+            if (chargeLevel > 2.0) chargeLevel = 2.0;
         } else {
             zoomLevel += (1.0 - zoomLevel) * 0.15;
             if (currentState != GameState.ARROW_FLYING && currentState != GameState.ROUND_END) {
@@ -253,7 +254,7 @@ public class GamePanel extends JPanel implements ActionListener {
                 g2d.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2d.setColor(new Color(0, 0, 0, 100));
                 g2d.drawOval(mouseX - 40, mouseY - 40, 80, 80);
-                double maxCap = 2.5;
+                double maxCap = 2.0;
                 double ratio = chargeLevel / maxCap;
                 Color chargeColor = new Color((int)(255 * ratio), (int)(255 * (1.0 - ratio)), 0);
                 g2d.setColor(chargeColor);
@@ -268,7 +269,7 @@ public class GamePanel extends JPanel implements ActionListener {
     private void drawBow(Graphics2D g2d) {
         double bowBaseX = WIDTH / 2.0;
         double bowBaseY = HEIGHT - 50.0;
-        double angle = Math.atan2(mouseY - bowBaseY, mouseX - bowBaseX) - Math.PI / 2;
+        double angle = Math.atan2(mouseY - bowBaseY, mouseX - bowBaseX) + Math.PI / 2;
 
         java.awt.geom.AffineTransform initialTransform = g2d.getTransform();
         g2d.translate(bowBaseX, bowBaseY);
@@ -279,8 +280,8 @@ public class GamePanel extends JPanel implements ActionListener {
 
         Path2D bowPath = new Path2D.Double();
         bowPath.moveTo(-300, bottomY - 100);
-        bowPath.quadTo(0, bottomY + 50, 300, bottomY - 100);
-        bowPath.quadTo(0, bottomY + 100, -300, bottomY - 100);
+        bowPath.quadTo(0, bottomY - 250, 300, bottomY - 100);
+        bowPath.quadTo(0, bottomY - 300, -300, bottomY - 100);
 
         g2d.setColor(new Color(120, 80, 30));
         g2d.fill(bowPath);
