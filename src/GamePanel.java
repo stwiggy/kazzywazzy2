@@ -50,6 +50,8 @@ public class GamePanel extends JPanel implements ActionListener {
     
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        setFocusable(true);
+        requestFocusInWindow();
         setBackground(new Color(135, 206, 235)); // Sky blue
 
         // Hide the default cursor
