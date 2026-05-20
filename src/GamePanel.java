@@ -39,12 +39,10 @@ public class GamePanel extends JPanel implements ActionListener {
     private int totalScore = 0;
     private int lastScore = 0;
 
-    // Aiming variables
     private int mouseX = WIDTH / 2;
     private int mouseY = HEIGHT / 2;
     private boolean isDragging = false;
     
-    // Zoom and charge mechanics
     private double zoomLevel = 1.0;
     private double chargeLevel = 0.0;
     
@@ -52,9 +50,8 @@ public class GamePanel extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         requestFocusInWindow();
-        setBackground(new Color(135, 206, 235)); // Sky blue
+        setBackground(new Color(135, 206, 235));
 
-        // Hide the default cursor
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
             cursorImg, new Point(0, 0), "blank cursor");
@@ -64,7 +61,6 @@ public class GamePanel extends JPanel implements ActionListener {
         arrow = new Arrow();
         wind = new Wind();
 
-        // Setup mouse listeners for aiming
         MouseAdapter ma = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -128,7 +124,6 @@ public class GamePanel extends JPanel implements ActionListener {
         addMouseListener(ma);
         addMouseMotionListener(mma);
 
-        // 60 FPS loop
         timer = new Timer(1000 / 60, this);
     }
 
@@ -140,7 +135,6 @@ public class GamePanel extends JPanel implements ActionListener {
         currentState = GameState.ARROW_FLYING;
         arrow.reset();
         
-        // Scale speed appropriately to cover the Target's 1000-unit depth distance
         arrow.vz = 100.0 + 200.0 * chargeLevel; 
         
         double wx = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
@@ -157,7 +151,6 @@ public class GamePanel extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // Update zoom and charge
         if (currentState == GameState.AIMING && isDragging) {
             zoomLevel += (1.5 - zoomLevel) * 0.1;
             chargeLevel += 0.02;
@@ -172,14 +165,12 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
 
-            // Check if arrow impacted your 1000.0 unit Z plane
             if (arrow.z >= Target.DISTANCE_Z) {
                 lastScore = target.calculateScore(arrow.x, arrow.y);
                 totalScore += lastScore;
                 currentState = GameState.ROUND_END;
             }
             
-            // Check if missed low and fell below ground level
             if (arrow.y > 600) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
@@ -193,17 +184,14 @@ public class GamePanel extends JPanel implements ActionListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // --- 3D WORLD RENDERING (Subject to zoom) ---
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // Sky Backdrop
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -211,7 +199,6 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
-        // Ground Plane
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
@@ -219,30 +206,27 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(groundPaint);
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
 
-        // 3D Perspective scaling math
         double cameraZ = 0; 
         double targetZDist = Target.DISTANCE_Z - cameraZ;
-        double targetScale = 1000.0 / targetZDist;
+        
+        // 🔴 EDITED SECTION: Reduced from 1000.0 to 600.0 to crush the visual perspective size
+        double targetScale = 600.0 / targetZDist;
 
-        // Draw 3D elements
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         wind.draw(g2d, WIDTH, HEIGHT);
 
         if (currentState == GameState.ARROW_FLYING) {
             double arrowDist = arrow.z - cameraZ;
             if (arrowDist < 1) arrowDist = 1;
-            double arrowScale = 1000.0 / arrowDist;
+            double arrowScale = 600.0 / arrowDist;
             arrow.draw(g2d, WIDTH, HEIGHT, arrowScale);
         }
 
-        // --- FLAT 2D UI RENDERING (Restored coordinate system) ---
         g2d.setTransform(oldTransform);
 
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
-            // Draw Bow directly mapped 1:1 onto your mouse coordinates!
             drawBow(g2d);
             
-            // Draw Crosshair HUD
             g2d.setColor(new Color(0, 255, 0, 180)); 
             g2d.setStroke(new BasicStroke(2));
             g2d.drawOval(mouseX - 15, mouseY - 15, 30, 30);
@@ -253,7 +237,6 @@ public class GamePanel extends JPanel implements ActionListener {
             g2d.fillOval(mouseX - 2, mouseY - 2, 4, 4); 
             g2d.setStroke(new BasicStroke(1));
             
-            // Draw Power Ring HUD
             if (isDragging) {
                 g2d.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2d.setColor(new Color(0, 0, 0, 100)); 
@@ -272,12 +255,9 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void drawBow(Graphics2D g2d) {
         double dynamicBowX = mouseX;
-        
-        // Adds immersive physical draw-back drop down the screen as you hold the button
         int tensionY = (int)(chargeLevel * 45); 
         int bottomY = HEIGHT + tensionY; 
         
-        // Frame curvature
         Path2D bowPath = new Path2D.Double();
         bowPath.moveTo(dynamicBowX - 300, bottomY - 100);
         bowPath.quadTo(dynamicBowX, bottomY + 50, dynamicBowX + 300, bottomY - 100);
@@ -290,11 +270,9 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(woodPaint);
         g2d.fill(bowPath);
         
-        // Center Grip
         g2d.setColor(new Color(40, 40, 40));
         g2d.fillRoundRect((int)dynamicBowX - 15, bottomY - 20, 30, 40, 10, 10);
         
-        // Cord String & Nocked Arrow
         g2d.setColor(new Color(220, 220, 220, 200)); 
         g2d.setStroke(new BasicStroke(3)); 
         
