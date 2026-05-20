@@ -11,7 +11,6 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    // ⚡ MODIFIED: Increased string tension and lowered mass for faster velocity profiles
     private static final double K = 450.0;       
     private static final double M = 0.02;       
     private static final double G = 9.8;        
@@ -56,6 +55,36 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // Markers are rendered directly via Target center tracking for consistency
+        // We only draw the flying model here. Once stuck, Target.java handles the green marker point.
+        if (isStuck) return;
+
+        int cx = screenWidth / 2;
+        int cy = screenHeight / 2 - 100;
+
+        // Calculate current 2D screen positions based on 3D coordinates
+        int screenX = cx + (int)(x * perspectiveScale);
+        int screenY = cy + (int)(y * perspectiveScale);
+
+        // Scale visual assets down dynamically as the arrow gets closer to DISTANCE_Z
+        int arrowLength = Math.max(10, (int)(80 * (1.0 - (z / Target.DISTANCE_Z))));
+        int thick = Math.max(1, (int)(4 * (1.0 - (z / Target.DISTANCE_Z))));
+
+        // 1. Draw Arrow Shaft (pointing directly into the screen center projection)
+        g.setStroke(new BasicStroke(thick, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(new Color(139, 69, 19)); // Wood brown
+        g.drawLine(screenX, screenY, screenX, screenY + arrowLength);
+
+        // 2. Draw Fletching / Feathers (at the back of the shaft)
+        g.setStroke(new BasicStroke(thick + 2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+        g.setColor(Color.WHITE); 
+        g.drawLine(screenX - thick, screenY + arrowLength, screenX - thick - 4, screenY + arrowLength - 8);
+        g.drawLine(screenX + thick, screenY + arrowLength, screenX + thick + 4, screenY + arrowLength - 8);
+
+        // 3. Draw Arrow Tip Nock
+        g.setColor(Color.DARK_GRAY);
+        g.fillOval(screenX - thick, screenY - thick, thick * 2, thick * 2);
+
+        // Reset system stroke defaults
+        g.setStroke(new BasicStroke(1));
     }
 }
