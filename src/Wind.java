@@ -27,5 +27,6 @@ public class Wind {
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight) {
         // Wind UI is hidden
+        //test
     }
 }
