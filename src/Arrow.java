@@ -24,15 +24,13 @@ public class Arrow {
 
         double eBow = 0.5 * K * (drawDistance * drawDistance);
         double v0 = Math.sqrt((2.0 * eBow) / M);
+        
+        // Normalized vector approach guarantees the arrow travels directly towards the crosshair coordinates
         double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
         
-        double phi = Math.asin(targetY / distanceToTarget3D);
-        double theta = Math.atan2(targetX, Target.DISTANCE_Z);
-
-        // Your initial exact trajectory velocity mapping
-        this.vx = v0 * Math.cos(phi) * Math.sin(theta);
-        this.vy = v0 * Math.sin(phi); 
-        this.vz = v0 * Math.cos(phi) * Math.cos(theta);
+        this.vx = v0 * (targetX / distanceToTarget3D);
+        this.vy = v0 * (targetY / distanceToTarget3D); 
+        this.vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
     }
 
     public void update(Wind wind) {
@@ -41,7 +39,7 @@ public class Arrow {
         flightTime += 0.016; 
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
-        // Your initial exact position formulas
+        // Your initial exact cumulative trajectory position calculations
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
@@ -59,22 +57,6 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // FIXED: Removed the early return statement that was blocking stuck arrows from drawing.
-        // This now projects the final coordinates perfectly into screen space.
-        int cx = screenWidth / 2;
-        int cy = screenHeight / 2 - 100;
-        
-        int tipScreenX = cx + (int)(x * perspectiveScale);
-        int tipScreenY = cy + (int)(y * perspectiveScale);
-        
-        int markerSize = Math.max(6, (int)(10 * perspectiveScale));
-        
-        // Dark background hole puncture
-        g.setColor(new Color(20, 20, 20, 180));
-        g.fillOval(tipScreenX - markerSize / 2, tipScreenY - markerSize / 2, markerSize, markerSize);
-        
-        // Bright red center impact marker
-        g.setColor(new Color(255, 50, 50)); 
-        g.fillOval(tipScreenX - markerSize / 4, tipScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
+        // Handled cleanly inside Target rendering pipeline now to completely stop sliding artifacts
     }
 }
