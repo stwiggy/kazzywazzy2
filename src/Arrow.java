@@ -13,13 +13,13 @@ public class Arrow {
     private double vy = 0;
     private double vz = 0;
     
-    // ⚡ REALISM & SPEED: Heavy bow spring tension constant (k) for rapid arrow speeds
+    // ⚡ SPEED CONSTANTS: Heavy bow spring tension constant (k) for rapid arrow speeds
     private static final double K = 850.0;       // Bow string constant (k)
     private static final double M = 0.05;       // Weight of arrow in kg (m)
     private static final double G = 9.8;        // Gravity acceleration constant (g)
     
-    // PHYSICS UPDATE: Wind scaling factor converting m/s force to m/s^2 acceleration
-    private static final double WIND_ACCEL_FACTOR = 0.4; 
+    // 💨 HIGH WIND DRIFT: Boosted to 5.0 to force major horizontal drifting on fast-flying arrows
+    private static final double WIND_ACCEL_FACTOR = 5.0; 
 
     private double flightTime = 0;              // Elapsed time 't' since release
     private boolean isStuck = false;
@@ -71,7 +71,7 @@ public class Arrow {
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2;
-        int cy = screenHeight / 2; // 🎯 CAMERA REALISM: Center aligned horizon perspective 
+        int cy = screenHeight / 2; // CAMERA REALISM: Center aligned horizon perspective 
         
         int tailScreenX = cx + (int)(x * perspectiveScale);
         int tailScreenY = cy + (int)(y * perspectiveScale);
