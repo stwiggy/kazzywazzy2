@@ -255,7 +255,10 @@ public class GamePanel extends JPanel implements ActionListener {
     private void drawBow(Graphics2D g2d) {
         double dynamicBowX = mouseX;
         int tensionY = (int)(chargeLevel * 45); 
-        int bottomY = HEIGHT + tensionY; 
+        
+        // 🔴 EDITED: Replaced HEIGHT constant layout anchor with mouseY cursor tracking anchor
+        int dynamicBowY = mouseY + 250; 
+        int bottomY = dynamicBowY + tensionY; 
         
         Path2D bowPath = new Path2D.Double();
         bowPath.moveTo(dynamicBowX - 300, bottomY - 100);
