@@ -14,19 +14,17 @@ public class Target {
     public double y = 0;
     public double radius = 150.0;
     
-    // 🔴 NEW: Track all the places where an arrow hit the target
+    // Persistent list holding all coordinates where an arrow pins the board face
     private final List<Point2D.Double> hitPoints = new ArrayList<>();
     
     private static final Color[] RING_COLORS = {
         Color.WHITE, Color.BLACK, Color.BLUE, Color.RED, Color.YELLOW
     };
 
-    // 🔴 NEW: Method to save a hit location
     public void addHit(double impactX, double impactY) {
         hitPoints.add(new Point2D.Double(impactX, impactY));
     }
 
-    // 🔴 NEW: Clear the marks when restarting the game
     public void clearHits() {
         hitPoints.clear();
     }
@@ -35,8 +33,9 @@ public class Target {
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100; 
         
+        // Synced with original arrow kinematic trajectory space (Down is positive)
         int screenX = cx + (int)(x * perspectiveScale);
-        int screenY = cy - (int)(y * perspectiveScale); 
+        int screenY = cy + (int)(y * perspectiveScale); 
         int screenRadius = (int)(radius * perspectiveScale);
         
         // --- Draw Stand ---
@@ -85,17 +84,18 @@ public class Target {
             g.drawLine(screenX, screenY - 5, screenX, screenY + 5);
         }
 
-        // 🔴 NEW: Draw all the saved arrow impact marks onto the target face
+        // --- Draw Saved Persistent Arrow Hits ---
         for (Point2D.Double hit : hitPoints) {
+            // Uses identical scaling + tracking logic to keep dots locked on target surface
             int hitScreenX = cx + (int)(hit.x * perspectiveScale);
-            int hitScreenY = cy - (int)(hit.y * perspectiveScale);
+            int hitScreenY = cy + (int)(hit.y * perspectiveScale);
             int markerSize = Math.max(6, (int)(10 * perspectiveScale));
 
-            // Outer shadow hole
+            // Outer dark impact puncture circle
             g.setColor(new Color(20, 20, 20, 200));
             g.fillOval(hitScreenX - markerSize / 2, hitScreenY - markerSize / 2, markerSize, markerSize);
 
-            // Inner bright impact dot
+            // Inner highly visible red point marker
             g.setColor(new Color(255, 50, 50));
             g.fillOval(hitScreenX - markerSize / 4, hitScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
         }
