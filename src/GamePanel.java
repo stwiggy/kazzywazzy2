@@ -65,7 +65,6 @@ public class GamePanel extends JPanel implements ActionListener {
         wind = new Wind();
 
         // Setup mouse listeners for aiming
-        // Setup mouse listeners for aiming
         MouseAdapter ma = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -187,7 +186,6 @@ public class GamePanel extends JPanel implements ActionListener {
             }
             
             // Check if it fell to the ground (missed low)
-            // Ground is let's say y = 500 in world coordinates
             if (arrow.y > 500) {
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
@@ -227,10 +225,10 @@ public class GamePanel extends JPanel implements ActionListener {
             0, HEIGHT * 2, new Color(20, 80, 20) // Dark green closer
         );
         g2d.setPaint(groundPaint);
-        g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); // Make ground wider to handle pan/zoom
+        g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
 
         // Perspective scale for the target
-        double cameraZ = 0; // Camera is at z=0
+        double cameraZ = 0; 
         double targetZDist = Target.DISTANCE_Z - cameraZ;
         double targetScale = 1000.0 / targetZDist;
 
@@ -250,9 +248,6 @@ public class GamePanel extends JPanel implements ActionListener {
 
         // --- UI RENDERING (Not zoomed/panned) ---
         g2d.setTransform(oldTransform);
-        
-        int cx = WIDTH / 2;
-        int cy = HEIGHT / 2;
 
         // Draw Bow (first person view) if aiming
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
@@ -293,14 +288,17 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        int bottomY = HEIGHT;
+        // --- 1. TRACK THE MOUSE COORDINATES DIRECTLY ---
+        // Since we are outside the transform matrix, tracking mouseX directly matches 1:1.
+        double dynamicBowX = mouseX;
         
-        // --- FIX THE ZOOM MISMATCH ---
-        // Reverse-engineer the zoom translation matrix so the bow coordinates 
-        // perfectly align with the scaled visual crosshair space.
-        double dynamicBowX = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
+        // --- 2. ADD DYNAMIC DRAW BACK DEPTH ---
+        // As you draw back the string, the bow structure naturally pulls slightly downward 
+        // on the screen for a dynamic 3D depth illusion.
+        int tensionY = (int)(chargeLevel * 45); 
+        int bottomY = HEIGHT + tensionY; 
         
-        // --- 1. Draw Bow Structure ---
+        // --- 3. Draw Bow Structure ---
         Path2D bowPath = new Path2D.Double();
         bowPath.moveTo(dynamicBowX - 300, bottomY - 100);
         bowPath.quadTo(dynamicBowX, bottomY + 50, dynamicBowX + 300, bottomY - 100);
@@ -317,26 +315,27 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setColor(new Color(40, 40, 40));
         g2d.fillRoundRect((int)dynamicBowX - 15, bottomY - 20, 30, 40, 10, 10);
         
-        // --- 2. Draw Bow String & Nocked Arrow ---
+        // --- 4. Draw Bow String & Nocked Arrow ---
         g2d.setColor(new Color(220, 220, 220, 200)); 
         g2d.setStroke(new BasicStroke(3)); 
         
         if (isDragging) {
-            g2d.drawLine((int)dynamicBowX - 290, bottomY - 90, (int)dynamicBowX, bottomY); 
-            g2d.drawLine((int)dynamicBowX + 290, bottomY - 90, (int)dynamicBowX, bottomY); 
+            // String anchors to the tips but pulls backward down past the frame
+            g2d.drawLine((int)dynamicBowX - 290, bottomY - 90, (int)dynamicBowX, bottomY + tensionY); 
+            g2d.drawLine((int)dynamicBowX + 290, bottomY - 90, (int)dynamicBowX, bottomY + tensionY); 
             
-            // Arrow body
+            // Arrow body moves back deeper based on tension
             g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect((int)dynamicBowX - 3, bottomY - 150, 6, 150);
+            g2d.fillRect((int)dynamicBowX - 3, bottomY - 150 + tensionY, 6, 150);
             
             // Fletching
             g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{(int)dynamicBowX-3, (int)dynamicBowX-15, (int)dynamicBowX-3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
-            g2d.fillPolygon(new int[]{(int)dynamicBowX+3, (int)dynamicBowX+15, (int)dynamicBowX+3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            g2d.fillPolygon(new int[]{(int)dynamicBowX-3, (int)dynamicBowX-15, (int)dynamicBowX-3}, new int[]{bottomY-20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
+            g2d.fillPolygon(new int[]{(int)dynamicBowX+3, (int)dynamicBowX+15, (int)dynamicBowX+3}, new int[]{bottomY-20 + tensionY, bottomY + tensionY, bottomY + tensionY}, 3);
             
             // Arrowhead
             g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{(int)dynamicBowX-4, (int)dynamicBowX, (int)dynamicBowX+4}, new int[]{bottomY-150, bottomY-160, bottomY-150}, 3);
+            g2d.fillPolygon(new int[]{(int)dynamicBowX-4, (int)dynamicBowX, (int)dynamicBowX+4}, new int[]{bottomY-150 + tensionY, bottomY-160 + tensionY, bottomY-150 + tensionY}, 3);
         } else {
             g2d.drawLine((int)dynamicBowX - 290, bottomY - 90, (int)dynamicBowX + 290, bottomY - 90);
             
