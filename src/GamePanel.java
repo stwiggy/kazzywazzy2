@@ -51,10 +51,17 @@ public class GamePanel extends JPanel implements ActionListener {
     private static final double A_CONSTANT = 2.5; 
 
     public GamePanel() {
+        // FORCE-FIX: Force system rendering properties programmatically 
+        System.setProperty("sun.java2d.opengl", "false");
+        System.setProperty("sun.java2d.pmoffscreen", "false");
+        
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         requestFocusInWindow();
+        
+        // Ensure standard background fallback profile properties are set
         setBackground(new Color(135, 206, 235));
+        setOpaque(true);
 
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
