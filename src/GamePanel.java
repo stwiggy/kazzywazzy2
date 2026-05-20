@@ -284,56 +284,71 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        int cx = WIDTH / 2;
         int bottomY = HEIGHT;
         
-        // Enhance bow look with Path2D and gradients
+        // --- CALCULATE DYNAMIC SWAY OFFSET ---
+        // This shifts the bow left or right based on the cursor's position
+        int centerScreenX = WIDTH / 2;
+        double lookRatioX = (double)(mouseX - centerScreenX) / centerScreenX; // Range from -1.0 to 1.0
+        int bowOffset = (int)(lookRatioX * 120); // Max 120 pixels movement range for natural sway
+        int dynamicBowX = centerScreenX + bowOffset;
+        
+        // --- 1. Draw Bow Structure ---
         Path2D bowPath = new Path2D.Double();
-        bowPath.moveTo(cx - 300, bottomY - 100);
-        bowPath.quadTo(cx, bottomY + 50, cx + 300, bottomY - 100);
-        bowPath.quadTo(cx, bottomY + 100, cx - 300, bottomY - 100);
+        // Left tip moves with offset
+        bowPath.moveTo(dynamicBowX - 300, bottomY - 100);
+        // Center point moves with offset
+        bowPath.quadTo(dynamicBowX, bottomY + 50, dynamicBowX + 300, bottomY - 100);
+        bowPath.quadTo(dynamicBowX, bottomY + 100, dynamicBowX - 300, bottomY - 100);
         
         GradientPaint woodPaint = new GradientPaint(
-            cx - 300, bottomY - 100, new Color(101, 67, 33), 
-            cx + 300, bottomY - 100, new Color(139, 69, 19)
+            dynamicBowX - 300, bottomY - 100, new Color(101, 67, 33), 
+            dynamicBowX + 300, bottomY - 100, new Color(139, 69, 19)
         );
         g2d.setPaint(woodPaint);
         g2d.fill(bowPath);
         
-        // Bow grip
+        // Bow grip centered on dynamic position
         g2d.setColor(new Color(40, 40, 40));
-        g2d.fillRoundRect(cx - 15, bottomY - 20, 30, 40, 10, 10);
+        g2d.fillRoundRect(dynamicBowX - 15, bottomY - 20, 30, 40, 10, 10);
         
-        // Bow string
-        g2d.setColor(new Color(220, 220, 220, 200)); // Slightly translucent string
-        g2d.setStroke(new BasicStroke(3)); // Thicker string
+        // --- 2. Draw Bow String ---
+        g2d.setColor(new Color(220, 220, 220, 200)); 
+        g2d.setStroke(new BasicStroke(3)); 
+        
         if (isDragging) {
-            g2d.drawLine(cx - 290, bottomY - 90, cx, bottomY); // Left string to center
-            g2d.drawLine(cx + 290, bottomY - 90, cx, bottomY); // Right string to center
+            // String pulled back toward the bottom center grip, but anchored to moving outer tips
+            g2d.drawLine(dynamicBowX - 290, bottomY - 90, dynamicBowX, bottomY); 
+            g2d.drawLine(dynamicBowX + 290, bottomY - 90, dynamicBowX, bottomY); 
             
-            // Arrow nocked
+            // Nocked Arrow following the dynamic movement
             g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect(cx - 3, bottomY - 150, 6, 150);
-            // Fletching
+            g2d.fillRect(dynamicBowX - 3, bottomY - 150, 6, 150);
+            
+            // Fletching (Feathers)
             g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{cx-3, cx-15, cx-3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
-            g2d.fillPolygon(new int[]{cx+3, cx+15, cx+3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
-            // Arrowhead
+            g2d.fillPolygon(new int[]{dynamicBowX-3, dynamicBowX-15, dynamicBowX-3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            g2d.fillPolygon(new int[]{dynamicBowX+3, dynamicBowX+15, dynamicBowX+3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            
+            // Arrowhead pointing towards your target
             g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{cx-4, cx, cx+4}, new int[]{bottomY-150, bottomY-160, bottomY-150}, 3);
+            g2d.fillPolygon(new int[]{dynamicBowX-4, dynamicBowX, dynamicBowX+4}, new int[]{bottomY-150, bottomY-160, bottomY-150}, 3);
         } else {
-            g2d.drawLine(cx - 290, bottomY - 90, cx + 290, bottomY - 90);
+            // At rest, the string is straight across the moving tips
+            g2d.drawLine(dynamicBowX - 290, bottomY - 90, dynamicBowX + 290, bottomY - 90);
             
-            // Arrow resting
+            // Resting Arrow following the dynamic movement
             g2d.setColor(new Color(50, 50, 50));
-            g2d.fillRect(cx - 3, bottomY - 100, 6, 100);
+            g2d.fillRect(dynamicBowX - 3, bottomY - 100, 6, 100);
+            
             g2d.setColor(new Color(200, 50, 50));
-            g2d.fillPolygon(new int[]{cx-3, cx-15, cx-3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
-            g2d.fillPolygon(new int[]{cx+3, cx+15, cx+3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            g2d.fillPolygon(new int[]{dynamicBowX-3, dynamicBowX-15, dynamicBowX-3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            g2d.fillPolygon(new int[]{dynamicBowX+3, dynamicBowX+15, dynamicBowX+3}, new int[]{bottomY-20, bottomY, bottomY}, 3);
+            
             g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillPolygon(new int[]{cx-4, cx, cx+4}, new int[]{bottomY-100, bottomY-110, bottomY-100}, 3);
+            g2d.fillPolygon(new int[]{dynamicBowX-4, dynamicBowX, dynamicBowX+4}, new int[]{bottomY-100, bottomY-110, bottomY-100}, 3);
         }
-        g2d.setStroke(new BasicStroke(1));
+        g2d.setStroke(new BasicStroke(1)); // Reset stroke
     }
 
     private void drawUI(Graphics2D g2d) {
