@@ -11,11 +11,10 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
     
-    // FIXED: Increased K to 1237.5 (550.0 * 2.25) to achieve a 1.5x faster velocity vector
-    private static final double K = 1237.5;       
+    private static final double K = 600.0;       
     private static final double M = 0.02;       
-    private static final double G = 9.8;        
-    private static final double WIND_ACCEL_FACTOR = 0.85; 
+    private static final double G = 25.0;        
+    private static final double WIND_ACCEL_FACTOR = 3.0; 
 
     private double flightTime = 0;              
     private boolean isStuck = false;
@@ -52,13 +51,8 @@ public class Arrow {
         z = (vz * flightTime);
     }
     
-    public void setStuck(boolean stuck) {
-        this.isStuck = stuck;
-    }
-    
-    public boolean isStuck() {
-        return isStuck;
-    }
+    public void setStuck(boolean stuck) { this.isStuck = stuck; }
+    public boolean isStuck() { return isStuck; }
     
     public void reset() {
         x = 0; y = 0; z = 0;
