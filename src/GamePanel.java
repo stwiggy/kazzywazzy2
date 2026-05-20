@@ -359,18 +359,21 @@ public class GamePanel extends JPanel implements ActionListener {
     private void drawUI(Graphics2D g2d) {
         g2d.setColor(new Color(0, 0, 0, 120));
         g2d.fillRoundRect(10, 10, 240, 105, 15, 15);
-
+    
         g2d.setFont(new Font("SansSerif", Font.BOLD, 22));
-        g2d.setColor(Color.BLACK);
+        
+        // Shadow (drawn first, offset by +2,+2)
+        g2d.setColor(new Color(0, 0, 0, 180));
         g2d.drawString("Level: " + currentLevel + " / " + MAX_LEVELS, 22, 37);
         g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 22, 67);
         g2d.drawString("Total Score: " + totalScore, 22, 97);
-
+    
+        // White text on top
         g2d.setColor(Color.WHITE);
         g2d.drawString("Level: " + currentLevel + " / " + MAX_LEVELS, 20, 35);
         g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 20, 65);
         g2d.drawString("Total Score: " + totalScore, 20, 95);
-
+    
         if (currentState == GameState.START_SCREEN) {
             drawCenterText(g2d, "Level 1: Calm Breezes - Click to start!");
         } else if (currentState == GameState.ROUND_END) {
