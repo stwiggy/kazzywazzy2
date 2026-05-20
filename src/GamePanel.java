@@ -54,6 +54,7 @@ public class GamePanel extends JPanel implements ActionListener {
         requestFocusInWindow();
         setBackground(new Color(135, 206, 235));
 
+        // Hide standard system cursor to use custom crosshair rendering
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
             cursorImg, new Point(0, 0), "blank cursor");
@@ -87,6 +88,7 @@ public class GamePanel extends JPanel implements ActionListener {
                     round = 1;
                     totalScore = 0;
                     wind.randomize();
+                    target.clearHits(); // Clear hit markers from previous run
                     currentState = GameState.AIMING;
                     return;
                 }
@@ -140,7 +142,9 @@ public class GamePanel extends JPanel implements ActionListener {
         double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
         
         double targetAimX = wx - (WIDTH / 2.0);
-        double targetAimY = wy - (HEIGHT / 2.0 - 100.0);
+        
+        // Corrects coordinate translation where physical Y values point up
+        double targetAimY = (HEIGHT / 2.0 - 100.0) - wy;
         
         arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
@@ -161,14 +165,19 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
 
+            // Trigger registration when arrow reaches target's Z distance plane
             if (arrow.z >= Target.DISTANCE_Z) {
                 lastScore = target.calculateScore(arrow.x, arrow.y);
                 totalScore += lastScore;
+                
+                target.addHit(arrow.x, arrow.y); // Log persistent hit point marker location
+                
                 arrow.setStuck(true);
                 currentState = GameState.ROUND_END;
             }
             
-            if (arrow.y > 800) {
+            // Safety break: Check if arrow dropped completely out of frame bounds
+            if (arrow.y < -400) { 
                 lastScore = 0;
                 currentState = GameState.ROUND_END;
             }
@@ -185,10 +194,12 @@ public class GamePanel extends JPanel implements ActionListener {
 
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         
+        // Apply camera zoom modifications
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
+        // Environment Background rendering
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -211,13 +222,13 @@ public class GamePanel extends JPanel implements ActionListener {
         wind.draw(g2d, WIDTH, HEIGHT);
 
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
-            // Note: Arrow handle draw request internally checks if it should skip rendering or show hit mark
             target.draw(g2d, WIDTH, HEIGHT, targetScale);
             arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
         }
 
         g2d.setTransform(oldTransform);
 
+        // HUD Crosshairs and Aim overlays
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
