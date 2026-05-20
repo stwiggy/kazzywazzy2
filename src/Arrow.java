@@ -3,56 +3,44 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 
 public class Arrow {
-    // 🔒 LOCKED BOW POSITION: Arrow world origin points start firmly locked at 0,0,0
     public double x = 0;
     public double y = 0;
     public double z = 0;
 
-    // Initial velocity vector components calculated at release
-    private double vx = 0;
-    private double vy = 0;
-    private double vz = 0;
+    // Made public again so old GamePanel code can access them directly
+    public double vx = 0;
+    public double vy = 0;
+    public double vz = 0;
     
-    // ⚡ SPEED CONSTANTS: Heavy bow spring tension constant (k) for rapid arrow speeds
-    private static final double K = 850.0;       // Bow string constant (k)
-    private static final double M = 0.05;       // Weight of arrow in kg (m)
-    private static final double G = 9.8;        // Gravity acceleration constant (g)
-    
-    // 💨 HIGH WIND DRIFT: Boosted to 5.0 to force major horizontal drifting on fast-flying arrows
-    private static final double WIND_ACCEL_FACTOR = 5.0; 
+    private static final double K = 150.0;       
+    private static final double M = 0.05;       
+    private static final double G = 9.8;        
+    private static final double WIND_ACCEL_FACTOR = 0.5; 
 
-    private double flightTime = 0;              // Elapsed time 't' since release
+    private double flightTime = 0;              
     private boolean isStuck = false;
 
     public void launch(double drawDistance, double targetX, double targetY) {
-        reset(); // Forces x=0, y=0, z=0 immediately on pull-back release
+        reset();
 
-        // 1. Kinetic energy transition: E_bow = 0.5 * k * x^2
         double eBow = 0.5 * K * (drawDistance * drawDistance);
-
-        // 2. Initial velocity magnitude calculation: vi = sqrt(2 * E / m)
         double v0 = Math.sqrt((2.0 * eBow) / M);
-
-        // 3. Vector Path Aiming: Create a direct line of sight vector from origin toward the cursor location
-        double distance3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
+        double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
         
-        // 4. Deconstruct normalized aiming vectors scaled up by total velocity (v0)
-        // This locks the bow base to 0,0,0 but pivots its launch trajectory perfectly to your crosshair
-        this.vx = v0 * (targetX / distance3D);
-        this.vy = v0 * (targetY / distance3D); 
-        this.vz = v0 * (Target.DISTANCE_Z / distance3D);
+        double phi = Math.asin(targetY / distanceToTarget3D);
+        double theta = Math.atan2(targetX, Target.DISTANCE_Z);
+
+        this.vx = v0 * Math.cos(phi) * Math.sin(theta);
+        this.vy = v0 * Math.sin(phi); 
+        this.vz = v0 * Math.cos(phi) * Math.cos(theta);
     }
 
     public void update(Wind wind) {
         if (isStuck) return;
         
-        // Advance continuous flight step timer
         flightTime += 0.016; 
-
-        // 💨 FIXED METHOD MATCH: Updated to use your exact 'getWindForce()' method
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
-        // Kinematic trajectory algorithms matching locked coordinates
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
@@ -71,24 +59,24 @@ public class Arrow {
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
         int cx = screenWidth / 2;
-        int cy = screenHeight / 2; // CAMERA REALISM: Center aligned horizon perspective 
+        int cy = screenHeight / 2 - 100;
         
         int tailScreenX = cx + (int)(x * perspectiveScale);
         int tailScreenY = cy + (int)(y * perspectiveScale);
         
-        double arrowLength3D = isStuck ? 12.0 : 45.0;
+        double arrowLength3D = isStuck ? 15.0 : 50.0;
         double tipZ = z + arrowLength3D;
         double tipScale = 600.0 / Math.max(1, tipZ);
         
         int tipScreenX = cx + (int)(x * tipScale);
         int tipScreenY = cy + (int)(y * tipScale);
         
-        g.setColor(new Color(230, 230, 230)); 
-        g.setStroke(new BasicStroke(Math.max(2, (int)(3 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(new Color(200, 200, 200)); 
+        g.setStroke(new BasicStroke(Math.max(2, (int)(4 * perspectiveScale)), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.drawLine(tailScreenX, tailScreenY, tipScreenX, tipScreenY);
         
-        int fletchSize = Math.max(2, (int)(8 * perspectiveScale));
-        g.setColor(new Color(235, 60, 60, 220)); 
+        int fletchSize = Math.max(3, (int)(10 * perspectiveScale));
+        g.setColor(new Color(220, 50, 50, 200)); 
         
         double dx = tipScreenX - tailScreenX;
         double dy = tipScreenY - tailScreenY;
@@ -109,7 +97,7 @@ public class Arrow {
         );
         
         if (isStuck) {
-            g.setColor(new Color(20, 20, 20, 180));
+            g.setColor(new Color(0, 0, 0, 150));
             g.fillOval(tipScreenX - 3, tipScreenY - 3, 6, 6);
         }
         g.setStroke(new BasicStroke(1));
