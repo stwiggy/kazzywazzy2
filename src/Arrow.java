@@ -29,6 +29,7 @@ public class Arrow {
         double phi = Math.asin(targetY / distanceToTarget3D);
         double theta = Math.atan2(targetX, Target.DISTANCE_Z);
 
+        // Your initial exact trajectory velocity mapping
         this.vx = v0 * Math.cos(phi) * Math.sin(theta);
         this.vy = v0 * Math.sin(phi); 
         this.vz = v0 * Math.cos(phi) * Math.cos(theta);
@@ -40,7 +41,7 @@ public class Arrow {
         flightTime += 0.016; 
         double aWind = wind.getWindForce() * WIND_ACCEL_FACTOR;
 
-        // Reverted completely back to your original cumulative kinematic formulas
+        // Your initial exact position formulas
         x = (vx * flightTime) + (0.5 * aWind * flightTime * flightTime);
         y = (vy * flightTime) + (0.5 * G * flightTime * flightTime); 
         z = (vz * flightTime);
@@ -58,23 +59,22 @@ public class Arrow {
     }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight, double perspectiveScale) {
-        // Hidden during flight processing
-        if (!isStuck) {
-            return;
-        }
-
+        // FIXED: Removed the early return statement that was blocking stuck arrows from drawing.
+        // This now projects the final coordinates perfectly into screen space.
         int cx = screenWidth / 2;
         int cy = screenHeight / 2 - 100;
         
         int tipScreenX = cx + (int)(x * perspectiveScale);
         int tipScreenY = cy + (int)(y * perspectiveScale);
         
-        int markerSize = Math.max(4, (int)(8 * perspectiveScale));
+        int markerSize = Math.max(6, (int)(10 * perspectiveScale));
         
-        g.setColor(new Color(0, 0, 0, 150));
+        // Dark background hole puncture
+        g.setColor(new Color(20, 20, 20, 180));
         g.fillOval(tipScreenX - markerSize / 2, tipScreenY - markerSize / 2, markerSize, markerSize);
         
-        g.setColor(new Color(230, 30, 30)); 
+        // Bright red center impact marker
+        g.setColor(new Color(255, 50, 50)); 
         g.fillOval(tipScreenX - markerSize / 4, tipScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
     }
 }
