@@ -160,18 +160,20 @@ public class GamePanel extends JPanel implements ActionListener {
      * Configures wind patterns depending entirely on current level settings.
      * Restricts forces to spatial directions avoiding forward/backward vector pushes.
      */
+    // Replace the configureWindForLevel() method inside your GamePanel.java with this version:
+
     private void configureWindForLevel() {
         if (currentLevel == 1) {
             // Level 1: Perfectly calm. No drift.
             wind.setWindForce(0); 
         } else if (currentLevel == 2) {
-            // Level 2: Moderate side-winds, vertical-winds, or diagonals
+            // Level 2: Intense standard winds (6.0 to 16.0 m/s)
             wind.randomize(); 
         } else {
-            // Level 3: Stronger multi-directional winds
+            // Level 3: Extreme gale-force crosswinds!
             wind.randomize();
-            // FIXED: Using getSpeed() instead of the removed getWindForce()
-            wind.setWindForce(wind.getSpeed() * 1.5); 
+            // FIXED: Amplified the Level 3 multiplier from 1.5x to 2.2x
+            wind.setWindForce(wind.getSpeed() * 2.2); 
         }
     }
 
