@@ -249,9 +249,16 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        double dynamicBowX = mouseX;
+        // 🔒 ANCHORED POSITION: Center is locked to the bottom-middle of the screen
+        double anchorX = WIDTH / 2.0;
+        int dynamicBowY = HEIGHT - 100; // Stays at the bottom of the window
+        
+        // 🎯 CURSOR TRACKING: Calculate a subtle shift factor based on mouse movement
+        // This tilts/leans the bow toward the cursor without letting it detach from the center
+        double shiftX = (mouseX - anchorX) * 0.15; 
+        double dynamicBowX = anchorX + shiftX;
+        
         int tensionY = (int)(chargeLevel * 15); 
-        int dynamicBowY = mouseY + 250; 
         int bottomY = dynamicBowY + tensionY; 
         
         Path2D bowPath = new Path2D.Double();
