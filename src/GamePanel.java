@@ -57,6 +57,7 @@ public class GamePanel extends JPanel implements ActionListener {
         requestFocusInWindow();
         setBackground(new Color(135, 206, 235));
 
+        // Hide default mouse pointer
         BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
             cursorImg, new Point(0, 0), "blank cursor");
@@ -66,69 +67,68 @@ public class GamePanel extends JPanel implements ActionListener {
         arrow = new Arrow();
         wind = new Wind();
         
-        // Initialize Level 1 with absolutely no wind
+        // Initialize state for Level 1
         configureWindForLevel();
 
         MouseAdapter ma = new MouseAdapter() {
-        @Override
-        public void mousePressed(MouseEvent e) {
-            if (currentState == GameState.START_SCREEN) {
-                currentState = GameState.AIMING;
-                isDragging = true;
-                mouseX = e.getX();
-                mouseY = e.getY();
-                return;
-            }
-            if (currentState == GameState.ROUND_END) {
-                if (shotInLevel < MAX_SHOTS) {
-                    shotInLevel++;
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (currentState == GameState.START_SCREEN) {
+                    currentState = GameState.AIMING;
+                    isDragging = true;
+                    mouseX = e.getX();
+                    mouseY = e.getY();
+                    return;
+                }
+                if (currentState == GameState.ROUND_END) {
+                    if (shotInLevel < MAX_SHOTS) {
+                        shotInLevel++;
+                        configureWindForLevel();
+                        currentState = GameState.AIMING;
+                        // Clear previous green mark ONLY when beginning the next active shot
+                        target.clearHits(); 
+                    } else {
+                        if (currentLevel < MAX_LEVELS) {
+                            currentState = GameState.LEVEL_COMPLETE;
+                        } else {
+                            currentState = GameState.GAME_OVER;
+                        }
+                    }
+                    return;
+                }
+                if (currentState == GameState.LEVEL_COMPLETE) {
+                    currentLevel++;
+                    shotInLevel = 1;
+                    target.clearHits(); // Clear board for the new level environment
                     configureWindForLevel();
                     currentState = GameState.AIMING;
-                    // FIXED: Clear the previous shot's green mark ONLY when 
-                    // the player actively clicks to start aiming the next arrow.
-                    target.clearHits(); 
-                } else {
-                    if (currentLevel < MAX_LEVELS) {
-                        currentState = GameState.LEVEL_COMPLETE;
-                    } else {
-                        currentState = GameState.GAME_OVER;
-                    }
+                    return;
                 }
-                return;
+                if (currentState == GameState.GAME_OVER) {
+                    currentLevel = 1;
+                    shotInLevel = 1;
+                    totalScore = 0;
+                    target.clearHits();
+                    configureWindForLevel();
+                    currentState = GameState.AIMING;
+                    return;
+                }
+
+                if (currentState == GameState.AIMING) {
+                    isDragging = true;
+                    mouseX = e.getX();
+                    mouseY = e.getY();
+                }
             }
-            if (currentState == GameState.LEVEL_COMPLETE) {
-                currentLevel++;
-                shotInLevel = 1;
-                target.clearHits(); // Clear the board when moving to a brand new level
-                configureWindForLevel();
-                currentState = GameState.AIMING;
-                return;
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (currentState == GameState.AIMING && isDragging) {
+                    isDragging = false;
+                    shootArrow();
+                }
             }
-            if (currentState == GameState.GAME_OVER) {
-                currentLevel = 1;
-                shotInLevel = 1;
-                totalScore = 0;
-                target.clearHits();
-                configureWindForLevel();
-                currentState = GameState.AIMING;
-                return;
-            }
-    
-            if (currentState == GameState.AIMING) {
-                isDragging = true;
-                mouseX = e.getX();
-                mouseY = e.getY();
-            }
-        }
-    
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            if (currentState == GameState.AIMING && isDragging) {
-                isDragging = false;
-                shootArrow();
-            }
-        }
-    };
+        };
 
         MouseMotionAdapter mma = new MouseMotionAdapter() {
             @Override
@@ -156,24 +156,23 @@ public class GamePanel extends JPanel implements ActionListener {
         timer.start();
     }
 
-    /**
-     * Configures wind patterns depending entirely on current level settings.
-     * Restricts forces to spatial directions avoiding forward/backward vector pushes.
-     */
-    // Replace the configureWindForLevel() method inside your GamePanel.java with this version:
-
     private void configureWindForLevel() {
         if (currentLevel == 1) {
-            // Level 1: Perfectly calm. No drift.
             wind.setWindForce(0); 
+            target.x = 0; 
+            target.y = 0; 
+            target.setMovementEnabled(false);
         } else if (currentLevel == 2) {
-            // Level 2: Intense standard winds (6.0 to 16.0 m/s)
             wind.randomize(); 
+            target.x = 0; 
+            target.y = 0;
+            target.setMovementEnabled(false);
         } else {
-            // Level 3: Extreme gale-force crosswinds!
             wind.randomize();
-            // FIXED: Amplified the Level 3 multiplier from 1.5x to 2.2x
+            // Level 3 gale modifier
             wind.setWindForce(wind.getSpeed() * 2.2); 
+            // Turn on running movement mechanics for Level 3
+            target.setMovementEnabled(true);
         }
     }
 
@@ -189,14 +188,12 @@ public class GamePanel extends JPanel implements ActionListener {
         arrow.launch(chargeLevel, targetAimX, targetAimY);
     }
 
-    // Replace the actionPerformed method in your GamePanel.java with this updated frame cycle:
-
     @Override
     public void actionPerformed(ActionEvent e) {
-        // Speeds up camera zoom transitions and draw time animations slightly without altering physics equations
+        // Fast-paced UI updates
         if (currentState == GameState.AIMING && isDragging) {
-            zoomLevel += (1.4 - zoomLevel) * 0.08; // Faster camera tracking update
-            chargeLevel += A_CONSTANT * 0.024;    // Faster bow drawing/charging speed
+            zoomLevel += (1.4 - zoomLevel) * 0.08; 
+            chargeLevel += A_CONSTANT * 0.024;    
             if (chargeLevel > 3.5) chargeLevel = 3.5; 
         } else {
             zoomLevel += (1.0 - zoomLevel) * 0.15;
@@ -204,30 +201,38 @@ public class GamePanel extends JPanel implements ActionListener {
                 chargeLevel = 0.0;
             }
         }
-    
+
+        // Run target positional interpolation if active and not on a menu screen
+        if (currentLevel == 3 && currentState != GameState.ROUND_END && currentState != GameState.LEVEL_COMPLETE && currentState != GameState.GAME_OVER) {
+            target.update();
+        }
+
         if (currentState == GameState.ARROW_FLYING) {
             arrow.update(wind);
-    
+
             if (arrow.z >= Target.DISTANCE_Z && !arrow.isStuck()) {
                 double dx = arrow.x - target.x;
                 double dy = arrow.y - target.y;
                 double distance = Math.sqrt(dx * dx + dy * dy);
-    
+
                 if (distance <= target.radius) {
                     lastScore = target.calculateScore(arrow.x, arrow.y);
                     totalScore += lastScore;
                     target.addHit(arrow.x, arrow.y);
                     arrow.setStuck(true);
+                    
+                    target.setMovementEnabled(false); // Stop moving instantly on hit
                     currentState = GameState.ROUND_END;
                 }
             }
             
             if (arrow.z > Target.DISTANCE_Z * 1.5 || arrow.y > 800) {
                 lastScore = 0;
+                target.setMovementEnabled(false); // Stop moving instantly on miss
                 currentState = GameState.ROUND_END;
             }
         }
-    
+
         repaint();
     }
 
@@ -243,7 +248,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.scale(zoomLevel, zoomLevel);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // Sky
+        // Environment: Sky
         GradientPaint skyPaint = new GradientPaint(
             0, -HEIGHT, new Color(30, 100, 200), 
             0, HEIGHT / 2 + 100, new Color(200, 230, 255)
@@ -251,7 +256,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(skyPaint);
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
-        // Ground
+        // Environment: Ground
         GradientPaint groundPaint = new GradientPaint(
             0, HEIGHT / 2 + 100, new Color(45, 160, 45), 
             0, HEIGHT * 2, new Color(20, 80, 20)
@@ -259,13 +264,11 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setPaint(groundPaint);
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT); 
 
-        double cameraZ = 0; 
-        double targetZDist = Target.DISTANCE_Z - cameraZ;
-        double targetScale = 600.0 / targetZDist;
+        double targetScale = 600.0 / Target.DISTANCE_Z;
 
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         
-        // Only draw the wind indicator if there is active wind (Levels 2 and 3)
+        // Hide wind indicator on Level 1
         if (currentLevel > 1) {
             wind.draw(g2d, WIDTH, HEIGHT);
         }
@@ -279,6 +282,7 @@ public class GamePanel extends JPanel implements ActionListener {
         if (currentState == GameState.AIMING || currentState == GameState.START_SCREEN) {
             drawBow(g2d);
             
+            // Reticle Render
             g2d.setColor(new Color(0, 255, 0, 180)); 
             g2d.setStroke(new BasicStroke(2));
             g2d.drawOval(mouseX - 15, mouseY - 15, 30, 30);
