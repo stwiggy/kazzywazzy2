@@ -212,11 +212,12 @@ public class GamePanel extends JPanel implements ActionListener {
         double targetZDist = Target.DISTANCE_Z - cameraZ;
         double targetScale = 600.0 / targetZDist;
 
+        // Base environment drawing
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
         wind.draw(g2d, WIDTH, HEIGHT);
 
+        // Render traveling arrow sequence distinctly over the target background environment
         if (currentState == GameState.ARROW_FLYING || currentState == GameState.ROUND_END) {
-            target.draw(g2d, WIDTH, HEIGHT, targetScale);
             arrow.draw(g2d, WIDTH, HEIGHT, targetScale);
         }
 
@@ -252,11 +253,9 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawBow(Graphics2D g2d) {
-        // Fix the bow base point to the bottom-center of the panel viewport
         double bowBaseX = WIDTH / 2.0;
         double bowBaseY = HEIGHT - 50.0;
         
-        // Calculate dynamic rotation angle relative to the cursor tracking coordinates
         double angle = Math.atan2(mouseY - bowBaseY, mouseX - bowBaseX) - Math.PI / 2;
         
         java.awt.geom.AffineTransform initialTransform = g2d.getTransform();
