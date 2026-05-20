@@ -14,7 +14,6 @@ public class Target {
     public double y = 0;
     public double radius = 150.0;
     
-    // Stores the relative offset (dx, dy) from the target's center
     private final List<Point2D.Double> relativeHitOffsets = new ArrayList<>();
     
     private static final Color[] RING_COLORS = {
@@ -22,7 +21,6 @@ public class Target {
     };
 
     public void addHit(double impactX, double impactY) {
-        // Calculate the exact offset from the target center immediately on impact
         double dx = impactX - this.x;
         double dy = impactY - this.y;
         relativeHitOffsets.add(new Point2D.Double(dx, dy));
@@ -86,21 +84,18 @@ public class Target {
             g.drawLine(screenX, screenY - 5, screenX, screenY + 5);
         }
 
-        // --- Draw Saved Hits (Locked to Target Center) ---
+        // --- Draw Saved Hits ---
         for (Point2D.Double offset : relativeHitOffsets) {
-            // Apply scale directly to the offset relative to screenX/screenY
             int hitScreenX = screenX + (int)(offset.x * perspectiveScale);
             int hitScreenY = screenY + (int)(offset.y * perspectiveScale);
-            
-            // 🔴 MODIFIED: Made base dot size significantly larger (increased from 6/10 to 14/20)
             int markerSize = Math.max(14, (int)(20 * perspectiveScale));
 
             // Outer puncture circle
             g.setColor(new Color(20, 20, 20, 220));
             g.fillOval(hitScreenX - markerSize / 2, hitScreenY - markerSize / 2, markerSize, markerSize);
 
-            // Inner highly visible red point marker
-            g.setColor(new Color(255, 40, 40));
+            // 🟢 MODIFIED: Changed from red to a highly visible bright green
+            g.setColor(new Color(50, 255, 50));
             g.fillOval(hitScreenX - markerSize / 4, hitScreenY - markerSize / 4, markerSize / 2, markerSize / 2);
         }
     }
