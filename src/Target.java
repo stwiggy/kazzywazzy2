@@ -67,7 +67,7 @@ public class Target {
         int cx = screenWidth / 2 + (int)(x * perspectiveScale);
         int cy = screenHeight / 2 - 50 + (int)(y * perspectiveScale);
         int r = (int)(radius * perspectiveScale);
-        Color[] rings = {Color.YELLOW, Color.RED, Color.BLUE, Color.BLACK, Color.WHITE};
+        Color[] rings = {Color.YELLOW, Color.RED, Color.BLUE, Color.GREEN, Color.WHITE};
         for (int i = rings.length - 1; i >= 0; i--) {
             int currentRadius = r * (i + 1) / rings.length;
             g.setColor(rings[i]);
@@ -75,14 +75,15 @@ public class Target {
             g.setColor(Color.DARK_GRAY);
             g.drawOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
         }
-        g.setColor(new Color(50, 255, 50));
         for (HitPoint hit : hits) {
-            // draw hit relative to current target center
             int hx = screenWidth / 2 + (int)((x + hit.relX) * perspectiveScale);
             int hy = screenHeight / 2 - 50 + (int)((y + hit.relY) * perspectiveScale);
-            g.fillOval(hx - 4, hy - 4, 8, 8);
+            int s = 6;
             g.setColor(Color.BLACK);
-            g.drawOval(hx - 4, hy - 4, 8, 8);
+            g.setStroke(new java.awt.BasicStroke(3, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+            g.drawLine(hx - s, hy - s, hx + s, hy + s);
+            g.drawLine(hx + s, hy - s, hx - s, hy + s);
+            g.setStroke(new java.awt.BasicStroke(1));
         }
     }
 }
