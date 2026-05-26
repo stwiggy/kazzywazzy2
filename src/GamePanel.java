@@ -328,23 +328,27 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.drawString("Shot: " + shotInLevel + " / " + MAX_SHOTS, 20, 65);
         g2d.drawString("Total Score: " + totalScore, 20, 95);
         if (currentState == GameState.START_SCREEN) {
-            drawCenterText(g2d, "Level 1: Calm Breezes - Click to start!");
+            drawCenterText(g2d, "Click to start Level 1!", HEIGHT / 2 + 150);
         } else if (currentState == GameState.ROUND_END) {
-            drawCenterText(g2d, "Hit Score: " + lastScore + " - Click to continue");
+            drawCenterText(g2d, "Hit Score: " + lastScore + " - Click to continue", HEIGHT / 2 + 150);
         } else if (currentState == GameState.LEVEL_COMPLETE) {
-            drawCenterText(g2d, "Level " + currentLevel + " Cleared! Click for Level " + (currentLevel + 1));
+            drawCenterText(g2d, "Level " + currentLevel + " Cleared! Click for Level " + (currentLevel + 1), HEIGHT / 2 + 150);
         } else if (currentState == GameState.GAME_OVER) {
-            drawCenterText(g2d, "Victory! Grand Score: " + totalScore + " - Click to restart");
+            drawCenterText(g2d, "Victory! Grand Score: " + totalScore + " - Click to restart", HEIGHT / 2 + 150);
         }
     }
 
     private void drawCenterText(Graphics2D g2d, String text) {
+        drawCenterText(g2d, text, HEIGHT / 2);
+    }
+
+    private void drawCenterText(Graphics2D g2d, String text, int y) {
         g2d.setFont(new Font("SansSerif", Font.BOLD, 32));
         int stringLen = (int) g2d.getFontMetrics().getStringBounds(text, g2d).getWidth();
         int start = WIDTH / 2 - stringLen / 2;
         g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.drawString(text, start + 3, HEIGHT / 2 + 3);
+        g2d.drawString(text, start + 3, y + 3);
         g2d.setColor(Color.WHITE);
-        g2d.drawString(text, start, HEIGHT / 2);
+        g2d.drawString(text, start, y);
     }
 }
