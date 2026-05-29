@@ -17,7 +17,6 @@ public class Arrow {
     private double flightTime = 0;
     private boolean isStuck = false;
 
-    // store initial velocity for direction
     private double initialVx = 0;
     private double initialVy = 0;
     private double initialVz = 0;
@@ -75,19 +74,16 @@ public class Arrow {
         int screenX = cx + (int)(x * perspectiveScale);
         int screenY = cy + (int)(y * perspectiveScale);
 
-        // compute current velocity direction including gravity and wind for arrow angle
         double curVx = initialVx;
         double curVy = initialVy + GRAVITY * flightTime;
         double curVz = initialVz;
 
-        // project 3D velocity onto 2D screen
         double len = Math.sqrt(curVx * curVx + curVy * curVy + curVz * curVz);
         if (len == 0) len = 1;
 
         int arrowLength = Math.max(10, (int)(80 * (1.0 - (z / Target.DISTANCE_Z))));
         int thick = Math.max(1, (int)(4 * (1.0 - (z / Target.DISTANCE_Z))));
 
-        // direction of arrow on screen
         double screenDirX = curVx / len;
         double screenDirY = curVy / len;
 
@@ -98,13 +94,11 @@ public class Arrow {
         g.setColor(new Color(139, 69, 19));
         g.drawLine(tailX, tailY, screenX, screenY);
 
-        // fletching at tail
         g.setStroke(new BasicStroke(thick + 2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
         g.setColor(Color.WHITE);
         g.drawLine(tailX - thick, tailY, tailX - thick - 4, tailY - 8);
         g.drawLine(tailX + thick, tailY, tailX + thick + 4, tailY - 8);
 
-        // tip
         g.setColor(Color.DARK_GRAY);
         g.fillOval(screenX - thick, screenY - thick, thick * 2, thick * 2);
 
