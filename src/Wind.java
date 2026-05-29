@@ -5,9 +5,9 @@ import java.awt.Graphics2D;
 import java.util.Random;
 
 public class Wind {
-    private double speed;        
-    private double dirSignX;     
-    private double dirSignY;     
+    private double windSpeed;        
+    private double windDirectionX;     
+    private double windDirectionY;     
     
     private Random random;
 
@@ -17,37 +17,37 @@ public class Wind {
     }
 
     public void randomize() {
-        this.speed = 6.0 + (random.nextDouble() * 10.0);
+        this.windSpeed = 6.0 + (random.nextDouble() * 10.0);
         int windType = random.nextInt(3);
         
         if (windType == 0) {
-            this.dirSignX = random.nextBoolean() ? 1.0 : -1.0;
-            this.dirSignY = 0.0;
+            this.windDirectionX = random.nextBoolean() ? 1.0 : -1.0;
+            this.windDirectionY = 0.0;
         } else if (windType == 1) {
-            this.dirSignX = 0.0;
-            this.dirSignY = random.nextBoolean() ? 1.0 : -1.0;
+            this.windDirectionX = 0.0;
+            this.windDirectionY = random.nextBoolean() ? 1.0 : -1.0;
         } else {
-            this.dirSignX = random.nextBoolean() ? 1.0 : -1.0;
-            this.dirSignY = random.nextBoolean() ? 1.0 : -1.0;
+            this.windDirectionX = random.nextBoolean() ? 1.0 : -1.0;
+            this.windDirectionY = random.nextBoolean() ? 1.0 : -1.0;
         }
     }
     
     public void setWindForce(double force) {
         if (force == 0) {
-            this.speed = 0.0;
-            this.dirSignX = 0.0;
-            this.dirSignY = 0.0;
+            this.windSpeed = 0.0;
+            this.windDirectionX = 0.0;
+            this.windDirectionY = 0.0;
         } else {
-            this.speed = Math.abs(force);
+            this.windSpeed = Math.abs(force);
         }
     }
 
-    public double getSpeed() { return speed; }
-    public double getDirSignX() { return dirSignX; }
-    public double getDirSignY() { return dirSignY; }
+    public double getSpeed() { return windSpeed; }
+    public double getDirSignX() { return windDirectionX; }
+    public double getDirSignY() { return windDirectionY; }
 
     public void draw(Graphics2D g, int screenWidth, int screenHeight) {
-        if (speed == 0.0 || (dirSignX == 0.0 && dirSignY == 0.0)) {
+        if (windSpeed == 0.0 || (windDirectionX == 0.0 && windDirectionY == 0.0)) {
             return;
         }
 
@@ -59,7 +59,7 @@ public class Wind {
 
         g.setFont(new Font("SansSerif", Font.BOLD, 14));
         g.setColor(Color.WHITE);
-        g.drawString("Wind: " + String.format("%.1f", speed) + " m/s", uiX, uiY - 5);
+        g.drawString("Wind: " + String.format("%.1f", windSpeed) + " m/s", uiX, uiY - 5);
 
         int cx = uiX + 55;
         int cy = uiY + 18;
@@ -68,10 +68,10 @@ public class Wind {
         g.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g.setColor(Color.CYAN);
 
-        int endX = cx + (int)(dirSignX * len);
-        int endY = cy + (int)(dirSignY * len);
-        int startX = cx - (int)(dirSignX * len);
-        int startY = cy - (int)(dirSignY * len);
+        int endX = cx + (int)(windDirectionX * len);
+        int endY = cy + (int)(windDirectionY * len);
+        int startX = cx - (int)(windDirectionX * len);
+        int startY = cy - (int)(windDirectionY * len);
 
         g.drawLine(startX, startY, endX, endY);
 
