@@ -10,34 +10,34 @@ public class Arrow {
     public double vy = 0;
     public double vz = 0;
 
-    private static final double K = 200.0;
-    private static final double M = 0.02;
-    private static final double G = 25.0;
-    private static final double WIND_ACCEL_FACTOR = 12.0;
+    private static final double BOW_STIFFNESS = 200.0;
+    private static final double ARROW_MASS = 0.02;
+    private static final double GRAVITY = 25.0;
+    private static final double WIND_DRAG = 12.0;
     private double flightTime = 0;
     private boolean isStuck = false;
 
     // store initial velocity for direction
-    private double initVx = 0;
-    private double initVy = 0;
-    private double initVz = 0;
-    private double initSpeed = 0;
+    private double initialVx = 0;
+    private double initialVy = 0;
+    private double initialVz = 0;
+    private double initialSpeed = 0;
 
     public void launch(double drawDistance, double targetX, double targetY) {
         reset();
-        double eBow = 0.5 * K * (drawDistance * drawDistance);
-        double v0 = Math.sqrt((2.0 * eBow) / M);
+        double bowEnergy = 0.5 * BOW_STIFFNESS * (drawDistance * drawDistance);
+        double launchSpeed = Math.sqrt((2.0 * bowEnergy) / ARROW_MASS);
 
         double distanceToTarget3D = Math.sqrt(targetX * targetX + targetY * targetY + Target.DISTANCE_Z * Target.DISTANCE_Z);
 
-        vx = v0 * (targetX / distanceToTarget3D);
-        vy = v0 * (targetY / distanceToTarget3D);
-        vz = v0 * (Target.DISTANCE_Z / distanceToTarget3D);
+        vx = launchSpeed * (targetX / distanceToTarget3D);
+        vy = launchSpeed * (targetY / distanceToTarget3D);
+        vz = launchSpeed * (Target.DISTANCE_Z / distanceToTarget3D);
 
-        initVx = vx;
-        initVy = vy;
-        initVz = vz;
-        initSpeed = v0;
+        initialVx = vx;
+        initialVy = vy;
+        initialVz = vz;
+        initialSpeed = launchSpeed;
     }
 
     public void update(Wind wind) {
@@ -47,12 +47,12 @@ public class Arrow {
         double windSpeed = wind.getSpeed();
         double signX = wind.getDirSignX();
         double signY = wind.getDirSignY();
-        double totalWindAcceleration = windSpeed * WIND_ACCEL_FACTOR;
+        double totalWindAcceleration = windSpeed * WIND_DRAG;
 
         double driftX = 0.5 * totalWindAcceleration * flightTime * flightTime * signX;
         double driftY = 0.5 * totalWindAcceleration * flightTime * flightTime * signY;
         x = (vx * flightTime) + driftX;
-        y = (vy * flightTime) + (0.5 * G * flightTime * flightTime) + driftY;
+        y = (vy * flightTime) + (0.5 * GRAVITY * flightTime * flightTime) + driftY;
         z = (vz * flightTime);
     }
 
@@ -62,7 +62,7 @@ public class Arrow {
     public void reset() {
         x = 0; y = 0; z = 0;
         vx = 0; vy = 0; vz = 0;
-        initVx = 0; initVy = 0; initVz = 0; initSpeed = 0;
+        initialVx = 0; initialVy = 0; initialVz = 0; initialSpeed = 0;
         flightTime = 0;
         isStuck = false;
     }
@@ -76,9 +76,9 @@ public class Arrow {
         int screenY = cy + (int)(y * perspectiveScale);
 
         // compute current velocity direction including gravity and wind for arrow angle
-        double curVx = initVx;
-        double curVy = initVy + G * flightTime;
-        double curVz = initVz;
+        double curVx = initialVx;
+        double curVy = initialVy + GRAVITY * flightTime;
+        double curVz = initialVz;
 
         // project 3D velocity onto 2D screen
         double len = Math.sqrt(curVx * curVx + curVy * curVy + curVz * curVz);
