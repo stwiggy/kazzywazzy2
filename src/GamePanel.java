@@ -41,9 +41,9 @@ public class GamePanel extends JPanel implements ActionListener {
     private int mouseX = WIDTH / 2;
     private int mouseY = HEIGHT / 2;
     private boolean isDragging = false;
-    private double zoomLevel = 1.0;
-    private double chargeLevel = 0.0;
-    private static final double A_CONSTANT = 2.5;
+    private double cameraZoom = 1.0;
+    private double bowCharge = 0.0;
+    private static final double CHARGE_RATE = 2.5;
 
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -67,6 +67,7 @@ public class GamePanel extends JPanel implements ActionListener {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (currentState == GameState.START_SCREEN) {
+                    target.showScores();
                     currentState = GameState.AIMING;
                     isDragging = true;
                     mouseX = e.getX();
@@ -80,8 +81,8 @@ public class GamePanel extends JPanel implements ActionListener {
             target.setMoving(currentLevel == 3);
                         currentState = GameState.AIMING;
                         target.clearHits();
-                        zoomLevel = 1.0;
-                        chargeLevel = 0.0;
+                        cameraZoom = 1.0;
+                        bowCharge = 0.0;
                     } else {
                         if (currentLevel < MAX_LEVELS) {
                             currentState = GameState.LEVEL_COMPLETE;
@@ -98,8 +99,8 @@ public class GamePanel extends JPanel implements ActionListener {
                     configureWindForLevel();
             target.setMoving(currentLevel == 3);
                     currentState = GameState.AIMING;
-                    zoomLevel = 1.0;
-                    chargeLevel = 0.0;
+                    cameraZoom = 1.0;
+                    bowCharge = 0.0;
                     return;
                 }
                 if (currentState == GameState.GAME_OVER) {
@@ -110,8 +111,8 @@ public class GamePanel extends JPanel implements ActionListener {
                     configureWindForLevel();
             target.setMoving(currentLevel == 3);
                     currentState = GameState.AIMING;
-                    zoomLevel = 1.0;
-                    chargeLevel = 0.0;
+                    cameraZoom = 1.0;
+                    bowCharge = 0.0;
                     return;
                 }
                 if (currentState == GameState.AIMING) {
@@ -157,32 +158,33 @@ public class GamePanel extends JPanel implements ActionListener {
             wind.setWindForce(0);
         } else if (currentLevel == 2) {
             wind.randomize();
-            wind.setWindForce(10.0 + Math.random() * 15.0);
+            wind.setWindForce(10.0 + Math.random() * 10.0);
         } else {
             wind.randomize();
-            wind.setWindForce(20.0 + Math.random() * 15.0);
+            wind.setWindForce(20.0 + Math.random() * 10.0);
         }
     }
 
     private void shootArrow() {
+        target.hideScores();
         currentState = GameState.ARROW_FLYING;
-        double wx = (mouseX - WIDTH / 2.0) / zoomLevel + WIDTH / 2.0;
-        double wy = (mouseY - HEIGHT / 2.0) / zoomLevel + HEIGHT / 2.0;
+        double wx = (mouseX - WIDTH / 2.0) / cameraZoom + WIDTH / 2.0;
+        double wy = (mouseY - HEIGHT / 2.0) / cameraZoom + HEIGHT / 2.0;
         double targetAimX = wx - (WIDTH / 2.0);
         double targetAimY = wy - (HEIGHT / 2.0 - 100.0);
-        arrow.launch(chargeLevel, targetAimX, targetAimY);
+        arrow.launch(bowCharge, targetAimX, targetAimY);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         if (currentState == GameState.AIMING && isDragging) {
-            zoomLevel += (1.2 - zoomLevel) * 0.08;
-            chargeLevel += A_CONSTANT * 0.024;
-            if (chargeLevel > 2.0) chargeLevel = 2.0;
+            cameraZoom += (1.2 - cameraZoom) * 0.08;
+            bowCharge += CHARGE_RATE * 0.024;
+            if (bowCharge > 2.0) bowCharge = 2.0;
         } else {
-            zoomLevel += (1.0 - zoomLevel) * 0.15;
+            cameraZoom += (1.0 - cameraZoom) * 0.15;
             if (currentState != GameState.ARROW_FLYING && currentState != GameState.ROUND_END) {
-                chargeLevel = 0.0;
+                bowCharge = 0.0;
             }
         }
 
@@ -217,7 +219,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
         java.awt.geom.AffineTransform oldTransform = g2d.getTransform();
         g2d.translate(WIDTH / 2.0, HEIGHT / 2.0);
-        g2d.scale(zoomLevel, zoomLevel);
+        g2d.scale(cameraZoom, cameraZoom);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
         // Sky
@@ -229,6 +231,12 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT);
 
         double targetScale = 1.0;
+
+        // Wind squiggles
+        if (currentLevel > 1) {
+            drawWindSquiggles(g2d);
+        }
+
         target.draw(g2d, WIDTH, HEIGHT, targetScale);
 
         if (currentLevel > 1) {
@@ -255,7 +263,7 @@ public class GamePanel extends JPanel implements ActionListener {
                 g2d.setColor(new Color(0, 0, 0, 100));
                 g2d.drawOval(mouseX - 40, mouseY - 40, 80, 80);
                 double maxCap = 2.0;
-                double ratio = chargeLevel / maxCap;
+                double ratio = bowCharge / maxCap;
                 Color chargeColor = new Color((int)(255 * ratio), (int)(255 * (1.0 - ratio)), 0);
                 g2d.setColor(chargeColor);
                 int angle = (int)(360 * ratio);
@@ -264,6 +272,83 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
         drawUI(g2d);
+    }
+
+    private void drawWindSquiggles(Graphics2D g2d) {
+        double speed = wind.getSpeed();
+        double sx = wind.getDirSignX();
+        double sy = wind.getDirSignY();
+        if (speed == 0 || (sx == 0 && sy == 0)) return;
+
+        g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        // clip to sky area only
+        java.awt.Shape oldClip = g2d.getClip();
+        g2d.setClip(0, 0, WIDTH, HEIGHT / 2 + 100);
+        java.util.Random rng = new java.util.Random(77);
+        int numSquiggles = 6 + (int)(speed / 5);
+        double perpX = -sy;
+        double perpY = sx;
+
+        for (int i = 0; i < numSquiggles; i++) {
+            float thickness = 2.0f + rng.nextFloat() * 2.5f;
+            g2d.setStroke(new java.awt.BasicStroke(thickness, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+            int alpha = 200 + rng.nextInt(55);
+            g2d.setColor(new java.awt.Color(255, 255, 255, alpha));
+
+            double startX = rng.nextInt(WIDTH);
+            double startY = rng.nextInt(HEIGHT);
+            double len = 100 + rng.nextDouble() * 120;
+            double wave = 20 + rng.nextDouble() * 25;
+
+            // build a smooth continuous cubic bezier with no cusps
+            // key: each segment shares tangent direction at join points
+            double p0x = startX;
+            double p0y = startY;
+            // mid point
+            double p1x = startX + sx * len * 0.5;
+            double p1y = startY + sy * len * 0.5;
+            // end point
+            double p2x = startX + sx * len;
+            double p2y = startY + sy * len;
+
+            // control points chosen so tangent is always smooth
+            double c1x = p0x + sx * len * 0.15 + perpX * wave;
+            double c1y = p0y + sy * len * 0.15 + perpY * wave;
+            double c2x = p1x - sx * len * 0.15 + perpX * wave * 0.5;
+            double c2y = p1y - sy * len * 0.15 + perpY * wave * 0.5;
+            double c3x = p1x + sx * len * 0.15 - perpX * wave * 0.5;
+            double c3y = p1y + sy * len * 0.15 - perpY * wave * 0.5;
+            double c4x = p2x - sx * len * 0.15 - perpX * wave * 0.3;
+            double c4y = p2y - sy * len * 0.15 - perpY * wave * 0.3;
+
+            java.awt.geom.Path2D path = new java.awt.geom.Path2D.Double();
+            path.moveTo(p0x, p0y);
+            path.curveTo(c1x, c1y, c2x, c2y, p1x, p1y);
+            path.curveTo(c3x, c3y, c4x, c4y, p2x, p2y);
+
+            // smooth curl: only add if curl tangent continues naturally from last segment
+            int curlType = rng.nextInt(3);
+            if (curlType < 2) {
+                double curlDir = (curlType == 0) ? 1.0 : -1.0;
+                double curlR = 18 + rng.nextDouble() * 14;
+                // incoming tangent at p2 is (p2 - c4), continue smoothly
+                double tanX = p2x - c4x;
+                double tanY = p2y - c4y;
+                double tanLen = Math.sqrt(tanX * tanX + tanY * tanY);
+                if (tanLen > 0) { tanX /= tanLen; tanY /= tanLen; }
+                double cp1x = p2x + tanX * curlR;
+                double cp1y = p2y + tanY * curlR;
+                double cp2x = p2x + tanX * curlR + (-tanY) * curlDir * curlR;
+                double cp2y = p2y + tanY * curlR + tanX * curlDir * curlR;
+                double endCx = p2x + (-tanY) * curlDir * curlR * 0.8;
+                double endCy = p2y + tanX * curlDir * curlR * 0.8;
+                path.curveTo(cp1x, cp1y, cp2x, cp2y, endCx, endCy);
+            }
+
+            g2d.draw(path);
+        }
+        g2d.setStroke(new java.awt.BasicStroke(1));
+        g2d.setClip(oldClip);
     }
 
     private void drawBow(Graphics2D g2d) {
@@ -275,7 +360,7 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.translate(bowBaseX, bowBaseY);
         g2d.rotate(angle);
 
-        int tensionY = (int)(chargeLevel * 15);
+        int tensionY = (int)(bowCharge * 15);
         int bottomY = tensionY;
 
         Path2D bowPath = new Path2D.Double();
@@ -292,8 +377,8 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.setStroke(new BasicStroke(3));
 
         if (isDragging) {
-            g2d.drawLine(-290, bottomY - 90, 0, bottomY + tensionY);
-            g2d.drawLine(290, bottomY - 90, 0, bottomY + tensionY);
+            g2d.drawLine(-290, bottomY - 100, 0, bottomY + tensionY);
+            g2d.drawLine(290, bottomY - 100, 0, bottomY + tensionY);
             g2d.setColor(new Color(50, 50, 50));
             g2d.fillRect(-3, bottomY - 150 + tensionY, 6, 150);
             g2d.setColor(new Color(200, 50, 50));
@@ -302,7 +387,7 @@ public class GamePanel extends JPanel implements ActionListener {
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.fillPolygon(new int[]{-4, 0, 4}, new int[]{bottomY - 150 + tensionY, bottomY - 160 + tensionY, bottomY - 150 + tensionY}, 3);
         } else {
-            g2d.drawLine(-290, bottomY - 90, 290, bottomY - 90);
+            g2d.drawLine(-290, bottomY - 100, 290, bottomY - 100);
             g2d.setColor(new Color(50, 50, 50));
             g2d.fillRect(-3, bottomY - 100, 6, 100);
             g2d.setColor(new Color(200, 50, 50));
@@ -334,7 +419,7 @@ public class GamePanel extends JPanel implements ActionListener {
         } else if (currentState == GameState.LEVEL_COMPLETE) {
             drawCenterText(g2d, "Level " + currentLevel + " Cleared! Click for Level " + (currentLevel + 1), HEIGHT / 2 + 150);
         } else if (currentState == GameState.GAME_OVER) {
-            drawCenterText(g2d, "Victory! Grand Score: " + totalScore + " - Click to restart", HEIGHT / 2 + 150);
+            drawCenterText(g2d, "Grand Score: " + totalScore + " - Click to play again", HEIGHT / 2 + 150);
         }
     }
 
