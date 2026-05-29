@@ -73,7 +73,6 @@ public class Target {
         int cy = screenHeight / 2 - 50 + (int)(y * perspectiveScale);
         int r = (int)(radius * perspectiveScale);
 
-        // Stand legs - only when not moving
         if (!moving) {
             g.setColor(new Color(180, 140, 90));
             g.setStroke(new BasicStroke(6, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -84,7 +83,6 @@ public class Target {
             g.setStroke(new BasicStroke(1));
         }
 
-        // Rings from outside in: white, black(green), blue, red, yellow(gold)
         Color[] rings = {new Color(255, 215, 80), new Color(210, 55, 55), new Color(50, 120, 200), new Color(80, 80, 80), Color.WHITE};
         int[] scores = {10, 8, 6, 4, 2};
 
@@ -97,7 +95,6 @@ public class Target {
             g.drawOval(cx - currentRadius, cy - currentRadius, currentRadius * 2, currentRadius * 2);
         }
 
-        // Score labels - one per ring, displayed vertically top to bottom
         if (showScores) {
             g.setFont(new Font("SansSerif", Font.BOLD, Math.max(8, r / 7)));
             int totalRings = rings.length;
@@ -112,12 +109,11 @@ public class Target {
                 if (i == totalRings - 1) textColor = new Color(80, 80, 80);
                 if (i == 0) textColor = new Color(120, 80, 0);
                 g.setColor(textColor);
-                // draw single label at top of each band
+                
                 g.drawString(label, cx - sw / 2, cy - bandMid + sh / 2);
             }
         }
 
-        // Hit markers
         for (HitPoint hit : hits) {
             int hx = screenWidth / 2 + (int)((x + hit.relX) * perspectiveScale);
             int hy = screenHeight / 2 - 50 + (int)((y + hit.relY) * perspectiveScale);
