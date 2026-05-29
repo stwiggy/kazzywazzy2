@@ -222,17 +222,14 @@ public class GamePanel extends JPanel implements ActionListener {
         g2d.scale(cameraZoom, cameraZoom);
         g2d.translate(-WIDTH / 2.0, -HEIGHT / 2.0);
 
-        // Sky
         g2d.setColor(new Color(30, 100, 200));
         g2d.fillRect(-WIDTH, -HEIGHT, WIDTH * 3, HEIGHT * 2 + 100);
 
-        // Ground
         g2d.setColor(new Color(45, 160, 45));
         g2d.fillRect(-WIDTH, HEIGHT / 2 + 100, WIDTH * 3, HEIGHT);
 
         double targetScale = 1.0;
 
-        // Wind squiggles
         if (currentLevel > 1) {
             drawWindSquiggles(g2d);
         }
@@ -281,7 +278,7 @@ public class GamePanel extends JPanel implements ActionListener {
         if (speed == 0 || (sx == 0 && sy == 0)) return;
 
         g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-        // clip to sky area only
+        
         java.awt.Shape oldClip = g2d.getClip();
         g2d.setClip(0, 0, WIDTH, HEIGHT / 2 + 100);
         java.util.Random rng = new java.util.Random(77);
@@ -300,18 +297,15 @@ public class GamePanel extends JPanel implements ActionListener {
             double len = 100 + rng.nextDouble() * 120;
             double wave = 20 + rng.nextDouble() * 25;
 
-            // build a smooth continuous cubic bezier with no cusps
-            // key: each segment shares tangent direction at join points
             double p0x = startX;
             double p0y = startY;
-            // mid point
+            
             double p1x = startX + sx * len * 0.5;
             double p1y = startY + sy * len * 0.5;
-            // end point
+            
             double p2x = startX + sx * len;
             double p2y = startY + sy * len;
 
-            // control points chosen so tangent is always smooth
             double c1x = p0x + sx * len * 0.15 + perpX * wave;
             double c1y = p0y + sy * len * 0.15 + perpY * wave;
             double c2x = p1x - sx * len * 0.15 + perpX * wave * 0.5;
@@ -326,12 +320,11 @@ public class GamePanel extends JPanel implements ActionListener {
             path.curveTo(c1x, c1y, c2x, c2y, p1x, p1y);
             path.curveTo(c3x, c3y, c4x, c4y, p2x, p2y);
 
-            // smooth curl: only add if curl tangent continues naturally from last segment
             int curlType = rng.nextInt(3);
             if (curlType < 2) {
                 double curlDir = (curlType == 0) ? 1.0 : -1.0;
                 double curlR = 18 + rng.nextDouble() * 14;
-                // incoming tangent at p2 is (p2 - c4), continue smoothly
+                
                 double tanX = p2x - c4x;
                 double tanY = p2y - c4y;
                 double tanLen = Math.sqrt(tanX * tanX + tanY * tanY);
